@@ -1,12 +1,5 @@
-import YachtsDetail from '@/components/Yachts';
+import FleetManagement from "@/components/Fleet/FleetManagement";
 
-const YachtsDetailPage: React.FC = () => {
-
-    return (
-        <div>
-            <YachtsDetail />
-        </div>
-    )
+export default function YachtsPage() {
+  return <FleetManagement />;
 }
-
-export default YachtsDetailPage;

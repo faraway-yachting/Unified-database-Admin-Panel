@@ -7,15 +7,13 @@ import Button from "@/common/Button";
 import MailBox from "@/icons/MailBox";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { useDispatch } from "react-redux";
-import { forgotPassword } from "@/lib/Features/Auth/authSlice";
-import type { AppDispatch } from '@/lib/Store/store';
+import { useForgotPasswordMutation, getAuthErrorMessage } from "@/lib/api/auth";
 import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
 const ForgetPasswordForm: React.FC = () => {
 
-    const dispatch = useDispatch<AppDispatch>();
+    const forgotPasswordMutation = useForgotPasswordMutation();
     const router = useRouter();
 
     const validationSchema = Yup.object({
@@ -31,27 +29,18 @@ const ForgetPasswordForm: React.FC = () => {
         validationSchema: validationSchema,
         onSubmit: async (values, { resetForm, setSubmitting, setFieldError }) => {
             try {
-                const resultAction = await dispatch(forgotPassword({
+                const result = await forgotPasswordMutation.mutateAsync({
                     email: values.email,
-                }));
-
-                if (forgotPassword.fulfilled.match(resultAction)) {
-                    const message = resultAction.payload?.message;
-                    toast.success(message, {
-                        onClose: () => {
-                            router.push("/otp")
-                        },
-                    });
-                    localStorage.setItem("userEmail", values.email);
-                    resetForm();
-                } else if (forgotPassword.rejected.match(resultAction)) {
-                    const errorPayload = resultAction.payload as { error: { message: string } };
-                    const errorMessage = errorPayload?.error?.message || "Something went wrong.";
-                    toast.error(errorMessage);
-                }
-            } catch (error) {
-                console.error("Login error:", error);
-                setFieldError("password", "An unexpected error occurred");
+                });
+                const message = (result as { message?: string })?.message;
+                toast.success(message ?? "Success", {
+                    onClose: () => router.push("/otp"),
+                });
+                localStorage.setItem("userEmail", values.email);
+                resetForm();
+            } catch (err) {
+                const errorMessage = err != null ? getAuthErrorMessage(err) : "Something went wrong.";
+                toast.error(errorMessage);
             } finally {
                 setSubmitting(false);
             }

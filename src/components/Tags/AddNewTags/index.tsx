@@ -3,20 +3,18 @@
 import { NewTagsData } from "@/data/Tags";
 import { MdKeyboardArrowLeft } from "react-icons/md";
 import { useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
-import type { RootState, AppDispatch } from "@/lib/Store/store";
+import { useAddTagMutation } from "@/lib/api/tags";
 import { toast, ToastContainer } from "react-toastify";
 import { useFormik } from "formik";
 import "react-toastify/dist/ReactToastify.css";
-import { addTags } from "@/lib/Features/Tags/tagsSlice";
 import {tagsValidationSchema, FormTagsValues} from "@/lib/Validation/addtagsValidationSchema";
 import Tick from "@/icons/Tick";
 
 const AddNewTags: React.FC = () => {
 
-  const dispatch = useDispatch<AppDispatch>();
+  const addTagMutation = useAddTagMutation();
   const router = useRouter();
-  const loading = useSelector((state: RootState) => state.tags.addLoading);
+  const loading = addTagMutation.isPending;
 
   const formik = useFormik<FormTagsValues>({
     initialValues: {
@@ -37,29 +35,18 @@ const AddNewTags: React.FC = () => {
           setSubmitting(false);
           return;
         }
-        const resultAction = await dispatch(
-          addTags({
-            name: values["Name"] ?? "",
-            slug: values["Slug"] ?? "",
-            description: values["Description"] ?? ""
-          })
-        );
-        if (addTags.fulfilled.match(resultAction)) {
-          toast.success("Tags Register successfully", {
-            onClose: () => {
-              router.push("/tags");
-            },
-          });
-          formik.resetForm();
-        } else if (addTags.rejected.match(resultAction)) {
-          const errorPayload = resultAction.payload as {
-            error: { message: string };
-          };
-          toast.error(errorPayload?.error?.message || "Something went wrong.");
-        }
-      } catch (error) {
-        console.error(error);
-        toast.error("An unexpected error occurred");
+        await addTagMutation.mutateAsync({
+          name: values["Name"] ?? "",
+          slug: values["Slug"] ?? "",
+          description: values["Description"] ?? ""
+        });
+        toast.success("Tags Register successfully", {
+          onClose: () => router.push("/tags"),
+        });
+        formik.resetForm();
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Something went wrong.";
+        toast.error(errorMessage);
       } finally {
         setSubmitting(false);
       }

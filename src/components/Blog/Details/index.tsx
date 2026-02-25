@@ -2,12 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { MdEdit, MdKeyboardArrowLeft } from "react-icons/md";
-import { useSelector, useDispatch } from "react-redux";
-import type { RootState, AppDispatch } from "@/lib/Store/store";
-import Image from "next/image";
-import DOMPurify from "dompurify";
-import { useEffect } from "react";
-import { getBlogById } from "@/lib/Features/Blog/blogSlice";
+import { useBlogByIdQuery } from "@/lib/api/blog";
 
 interface BlogDetailsProps {
   id: string;
@@ -16,15 +11,7 @@ interface BlogDetailsProps {
 
 const BlogDetails: React.FC<BlogDetailsProps> = ({ id, goToNextTab }) => {
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
-  const blogState = useSelector((state: RootState) => state.blog);
-  const { currentBlog, loading, error } = blogState;
-
-  useEffect(() => {
-    if (id) {
-      dispatch(getBlogById({ blogId: id }));
-    }
-  }, [id, dispatch]);
+  const { data: currentBlog, isLoading: loading, error } = useBlogByIdQuery(id);
 
   const blogInfoData = [
     {
@@ -51,7 +38,7 @@ const BlogDetails: React.FC<BlogDetailsProps> = ({ id, goToNextTab }) => {
   if (error) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-red-500">Error: {error}</div>
+        <div className="text-red-500">Error: {(error as Error)?.message}</div>
       </div>
     );
   }
@@ -60,16 +47,6 @@ const BlogDetails: React.FC<BlogDetailsProps> = ({ id, goToNextTab }) => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-lg">No blog found</div>
-        <div className="mt-4">
-          <button
-            onClick={() => {
-              // Temporary test - dispatch a mock blog
-            }}
-            className="px-4 py-2 bg-blue-500 text-white rounded"
-          >
-            Test with Mock Data
-          </button>
-        </div>
       </div>
     );
   }

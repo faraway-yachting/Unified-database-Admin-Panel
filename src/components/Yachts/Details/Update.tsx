@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { NewYachtsData, RichTextEditorSections } from "@/data/Yachts";
 import Image from "next/image";
-import { useSelector, useDispatch } from "react-redux";
-import { updateYachts } from "@/lib/Features/Yachts/yachtsSlice";
-import type { AppDispatch, RootState } from "@/lib/Store/store";
+import {
+  useYachtByIdQuery,
+  useUpdateYachtMutation,
+} from "@/lib/api/yachts";
+import { useTagsQuery } from "@/lib/api/tags";
+import { useTagsQuery } from "@/lib/api/tags";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useFormik } from "formik";
@@ -18,7 +21,6 @@ import { MdDeleteOutline } from "react-icons/md";
 import { MdKeyboardArrowLeft } from "react-icons/md";
 import RichTextEditor from "@/common/TextEditor";
 import Tick from "@/icons/Tick";
-import { getTags } from "@/lib/Features/Tags/tagsSlice";
 import { RiArrowDownSLine } from "react-icons/ri";
 
 interface CustomerProps {
@@ -41,15 +43,13 @@ type RichTextFieldKey =
 
 const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
   const [isTagsOpen, setIsTagsOpen] = useState(false);
-  
-  const dispatch = useDispatch<AppDispatch>();
-  const router = useRouter();
-  const { yachts, loading } = useSelector((state: RootState) => state.yachts);
-  const { allTags } = useSelector((state: RootState) => state.tags);
 
-  useEffect(() => {
-    dispatch(getTags());
-  }, [dispatch]);
+  const router = useRouter();
+  const { data: yachtData, isLoading: loading } = useYachtByIdQuery(id as string);
+  const yachts = yachtData?.yachts ?? null;
+  const { data: tagsData } = useTagsQuery();
+  const allTags = tagsData?.tags ?? [];
+  const updateYachtMutation = useUpdateYachtMutation();
 
   // Close tags dropdown when clicking outside
   useEffect(() => {
@@ -243,66 +243,55 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
         const galleryImages = Array.isArray(values["Gallery Images"])
           ? values["Gallery Images"].map((item: ImageItem) => item.value)
           : [];
-        const resultAction = await dispatch(
-          updateYachts({
-            payload: {
-              boatType: values["Boat Type"] ?? "",
-              price: values["Category"] ?? "",
-              capacity: values["Capacity"] ?? "",
-              length: values["Length"] ?? "",
-              lengthRange: values["Length Range"] ?? "",
-              title: values["Title"] ?? "",
-              cabins: values["Cabins"],
-              bathrooms: values["Bathrooms"],
-              passengerDayTrip: values["Passenger Day Trip"],
-              passengerOvernight: values["Passenger Overnight"],
-              guests: values["Guests"],
-              guestsRange: values["Guests Range"],
-              dayTripPrice: values["Day Trip Price"],
-              overnightPrice: values["Overnight Price"],
-              daytripPriceEuro: values["Daytrip Price (Euro)"],
-              primaryImage: values["Primary Image"] as File,
-              galleryImages: galleryImages,
-              dayCharter: values["Day Charter"] || yachts?.dayCharter || "",
-              overnightCharter:
-                values["Overnight Charter"] || yachts?.overnightCharter || "",
-              aboutThisBoat:
-                values["About this Boat"] || yachts?.aboutThisBoat || "",
-              specifications:
-                values["Specifications"] || yachts?.specifications || "",
-              boatLayout: values["Boat Layout"] || yachts?.boatLayout || "",
-              videoLink: values["Video Link"] ?? "",
-              badge: values["Badge"] ?? "",
-              slug: values["Slug"] ?? "",
-              design: values["Design"] ?? "",
-              built: values["Built"] ?? "",
-              cruisingSpeed: values["Cruising Speed"] ?? "",
-              lengthOverall: values["Length Overall"] ?? "",
-              fuelCapacity: values["Fuel Capacity"] ?? "",
-              waterCapacity: values["Water Capacity"] ?? "",
-              code: values["Code"] ?? "",
-              type: values["Yacht Type"],
-              tags: (values["Tags"] ?? []).filter((t: string | undefined): t is string => typeof t === "string"),
-            },
-            yachtsId: id.toString(),
-          })
-        );
-        if (updateYachts.fulfilled.match(resultAction)) {
-          toast.success("Yachts Update successfully", {
-            onClose: () => {
-              router.push("/yachts");
-            },
-          });
-          formik.resetForm();
-        } else if (updateYachts.rejected.match(resultAction)) {
-          const errorPayload = resultAction.payload as {
-            error: { message: string };
-          };
-          toast.error(errorPayload?.error?.message || "Something went wrong.");
-        }
+        const result = await updateYachtMutation.mutateAsync({
+          payload: {
+            boatType: values["Boat Type"] ?? "",
+            price: values["Category"] ?? "",
+            capacity: values["Capacity"] ?? "",
+            length: values["Length"] ?? "",
+            lengthRange: values["Length Range"] ?? "",
+            title: values["Title"] ?? "",
+            cabins: values["Cabins"],
+            bathrooms: values["Bathrooms"],
+            passengerDayTrip: values["Passenger Day Trip"],
+            passengerOvernight: values["Passenger Overnight"],
+            guests: values["Guests"],
+            guestsRange: values["Guests Range"],
+            dayTripPrice: values["Day Trip Price"],
+            overnightPrice: values["Overnight Price"],
+            daytripPriceEuro: values["Daytrip Price (Euro)"],
+            primaryImage: values["Primary Image"] as File,
+            galleryImages: galleryImages,
+            dayCharter: values["Day Charter"] || yachts?.dayCharter || "",
+            overnightCharter:
+              values["Overnight Charter"] || yachts?.overnightCharter || "",
+            aboutThisBoat:
+              values["About this Boat"] || yachts?.aboutThisBoat || "",
+            specifications:
+              values["Specifications"] || yachts?.specifications || "",
+            boatLayout: values["Boat Layout"] || yachts?.boatLayout || "",
+            videoLink: values["Video Link"] ?? "",
+            badge: values["Badge"] ?? "",
+            slug: values["Slug"] ?? "",
+            design: values["Design"] ?? "",
+            built: values["Built"] ?? "",
+            cruisingSpeed: values["Cruising Speed"] ?? "",
+            lengthOverall: values["Length Overall"] ?? "",
+            fuelCapacity: values["Fuel Capacity"] ?? "",
+            waterCapacity: values["Water Capacity"] ?? "",
+            code: values["Code"] ?? "",
+            type: values["Yacht Type"],
+            tags: (values["Tags"] ?? []).filter((t: string | undefined): t is string => typeof t === "string"),
+          },
+          yachtsId: id.toString(),
+        });
+        toast.success("Yachts Update successfully", {
+          onClose: () => router.push("/yachts"),
+        });
+        formik.resetForm();
       } catch (error) {
-        console.error(error);
-        toast.error("An unexpected error occurred");
+        const err = error as { message?: string };
+        toast.error(err?.message || "An unexpected error occurred");
       } finally {
         setSubmitting(false);
       }

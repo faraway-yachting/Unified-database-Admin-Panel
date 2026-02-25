@@ -1,26 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Details from "./Details";
 import Update from "./Update";
 import BreadCrum from "./BreadCrum";
-import { useSelector, useDispatch } from "react-redux";
-import { getTagsById } from "@/lib/Features/Tags/tagsSlice";
-import type { AppDispatch, RootState } from "@/lib/Store/store";
+import { useTagByIdQuery } from "@/lib/api/tags";
 
 interface VendorsProps {
   id: string | number;
 }
 
 const TagsDetail: React.FC<VendorsProps> = ({ id }) => {
-  
-  const [showGeneralInfo, setShowGeneralInfo] = useState(false);
-  const dispatch = useDispatch<AppDispatch>();
-  const { loading } = useSelector((state: RootState) => state.tags);
 
-  useEffect(() => {
-    dispatch(getTagsById({ tagsId: id as string }));
-  }, [id, dispatch]);
+  const [showGeneralInfo, setShowGeneralInfo] = useState(false);
+  const { data, isLoading: loading } = useTagByIdQuery(id as string);
+  const tag = data?.tags ?? null;
 
   return (
     <div className={`${!showGeneralInfo ? "h-[calc(100vh-115px)]" : ""}`}>
@@ -30,7 +24,7 @@ const TagsDetail: React.FC<VendorsProps> = ({ id }) => {
         </div>
       ) : (
         <>
-          <BreadCrum showGeneralInfo={showGeneralInfo} />
+          <BreadCrum showGeneralInfo={showGeneralInfo} tag={tag} />
           <div className="mt-4">
             {showGeneralInfo ? (
               <Update
@@ -38,7 +32,7 @@ const TagsDetail: React.FC<VendorsProps> = ({ id }) => {
                 id={id}
               />
             ) : (
-              <Details goToNextTab={() => setShowGeneralInfo(true)} />
+              <Details goToNextTab={() => setShowGeneralInfo(true)} tag={tag} />
             )}
           </div>
         </>

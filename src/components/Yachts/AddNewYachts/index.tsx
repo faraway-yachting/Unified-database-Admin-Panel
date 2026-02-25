@@ -8,44 +8,27 @@ import {
 import { MdDeleteOutline, MdKeyboardArrowLeft } from "react-icons/md";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
-import type { RootState, AppDispatch } from "@/lib/Store/store";
+import { useAddYachtMutation } from "@/lib/api/yachts";
+import { useTagsQuery } from "@/lib/api/tags";
 import { toast, ToastContainer } from "react-toastify";
 import { useFormik } from "formik";
 import "react-toastify/dist/ReactToastify.css";
-import { addYachts } from "@/lib/Features/Yachts/yachtsSlice";
 import {
   yachtsvalidationSchema,
   FormYachtsValues,
 } from "@/lib/Validation/addyachtsValidationSchema";
 import RichTextEditor from "@/common/TextEditor";
 import Tick from "@/icons/Tick";
-import { getTags } from "@/lib/Features/Tags/tagsSlice";
 import { RiArrowDownSLine } from "react-icons/ri";
-
-
-type RichTextFieldKey =
-  // | "Price"
-  // | "Trip Details"
-  | "Day Charter"
-  | "Overnight Charter"
-  | "About this Boat"
-  | "Specifications"
-  | "Boat Layout";
 
 const AddNewYachts: React.FC = () => {
 
-  const dispatch = useDispatch<AppDispatch>();
+  const addYachtMutation = useAddYachtMutation();
   const router = useRouter();
-  const loading = useSelector((state: RootState) => state.yachts.addLoading);
-  const { allTags } = useSelector(
-    (state: RootState) => state.tags
-  );
+  const { data: tagsData } = useTagsQuery();
+  const allTags = tagsData?.tags ?? [];
+  const loading = addYachtMutation.isPending;
   const [isTagsOpen, setIsTagsOpen] = useState(false);
-
-  useEffect(() => {
-    dispatch(getTags());
-  }, [dispatch]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -210,66 +193,49 @@ const AddNewYachts: React.FC = () => {
           setSubmitting(false);
           return;
         }
-        const resultAction = await dispatch(
-          addYachts({
-            boatType: values["Boat Type"] ?? "",
-            price: values["Category"] ?? "",
-            capacity: values["Capacity"] ?? "",
-            length: values["Length"] ?? "",
-            lengthRange: values["Length Range"] ?? "",
-            title: values["Title"] ?? "",
-            cabins: values["Cabins"],
-            tags: (values["Tags"] ?? []).filter((t: string | undefined): t is string => typeof t === "string"),
-            bathrooms: values["Bathrooms"],
-            passengerDayTrip: values["Passenger Day Trip"],
-            passengerOvernight: values["Passenger Overnight"],
-            guests: values["Guests"],
-            guestsRange: values["Guests Range"],
-            dayTripPrice: values["Day Trip Price"],
-            overnightPrice: values["Overnight Price"],
-            daytripPriceEuro: values["Daytrip Price (Euro)"],
-            // daytripPriceTHB: values["Daytrip Price (THB)"] ?? "",
-            // daytripPriceUSD: values["Daytrip Price (USD)"] ?? "",
-            primaryImage: values["Primary Image"] as File,
-            galleryImages: values["Gallery Images"] as File[],
-            // priceEditor: values["Price"] ?? "",
-            // tripDetailsEditor: values["Trip Details"] ?? "",
-            dayCharter: values["Day Charter"] ?? "",
-            overnightCharter: values["Overnight Charter"] ?? "",
-            aboutThisBoat: values["About this Boat"] ?? "",
-            specifications: values["Specifications"] ?? "",
-            boatLayout: values["Boat Layout"] ?? "",
-            videoLink: values["Video Link"] || undefined,
-            // videoLink2: values["Video Link 2"] ?? "",
-            // videoLink3: values["Video Link 3"] ?? "",
-            badge: values["Badge"] ?? "",
-            slug: values["Slug"] ?? "",
-            design: values["Design"] ?? "",
-            built: values["Built"] ?? "",
-            cruisingSpeed: values["Cruising Speed"] ?? "",
-            lengthOverall: values["Length Overall"] ?? "",
-            fuelCapacity: values["Fuel Capacity"] ?? "",
-            waterCapacity: values["Water Capacity"] ?? "",
-            code: values["Code"] ?? "",
-            type: values["Yacht Type"] ?? "",
-          })
-        );
-        if (addYachts.fulfilled.match(resultAction)) {
-          toast.success("Yachts Register successfully", {
-            onClose: () => {
-              router.push("/yachts");
-            },
-          });
-          formik.resetForm();
-        } else if (addYachts.rejected.match(resultAction)) {
-          const errorPayload = resultAction.payload as {
-            error: { message: string };
-          };
-          toast.error(errorPayload?.error?.message || "Something went wrong.");
-        }
+        const result = await addYachtMutation.mutateAsync({
+          boatType: values["Boat Type"] ?? "",
+          price: values["Category"] ?? "",
+          capacity: values["Capacity"] ?? "",
+          length: values["Length"] ?? "",
+          lengthRange: values["Length Range"] ?? "",
+          title: values["Title"] ?? "",
+          cabins: values["Cabins"],
+          tags: (values["Tags"] ?? []).filter((t: string | undefined): t is string => typeof t === "string"),
+          bathrooms: values["Bathrooms"],
+          passengerDayTrip: values["Passenger Day Trip"],
+          passengerOvernight: values["Passenger Overnight"],
+          guests: values["Guests"],
+          guestsRange: values["Guests Range"],
+          dayTripPrice: values["Day Trip Price"],
+          overnightPrice: values["Overnight Price"],
+          daytripPriceEuro: values["Daytrip Price (Euro)"],
+          primaryImage: values["Primary Image"] as File,
+          galleryImages: values["Gallery Images"] as File[],
+          dayCharter: values["Day Charter"] ?? "",
+          overnightCharter: values["Overnight Charter"] ?? "",
+          aboutThisBoat: values["About this Boat"] ?? "",
+          specifications: values["Specifications"] ?? "",
+          boatLayout: values["Boat Layout"] ?? "",
+          videoLink: values["Video Link"] || undefined,
+          badge: values["Badge"] ?? "",
+          slug: values["Slug"] ?? "",
+          design: values["Design"] ?? "",
+          built: values["Built"] ?? "",
+          cruisingSpeed: values["Cruising Speed"] ?? "",
+          lengthOverall: values["Length Overall"] ?? "",
+          fuelCapacity: values["Fuel Capacity"] ?? "",
+          waterCapacity: values["Water Capacity"] ?? "",
+          code: values["Code"] ?? "",
+          type: values["Yacht Type"] ?? "",
+        });
+        toast.success("Yachts Register successfully", {
+          onClose: () => router.push("/yachts"),
+        });
+        formik.resetForm();
       } catch (error) {
-        console.error(error);
-        toast.error("An unexpected error occurred");
+        const err = error as { message?: string };
+        toast.error(err?.message || "An unexpected error occurred");
       } finally {
         setSubmitting(false);
       }

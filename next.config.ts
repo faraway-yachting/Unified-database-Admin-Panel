@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['res.cloudinary.com', 'awais.thedevapp.online'],
+    domains: ['res.cloudinary.com', 'awais.thedevapp.online', 'images.unsplash.com'],
     unoptimized: false,
     formats: ['image/webp', 'image/avif'],
   },

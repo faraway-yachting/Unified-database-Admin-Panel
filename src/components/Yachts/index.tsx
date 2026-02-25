@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import BreadCrum from "./BreadCrum";
-import { useSelector, useDispatch } from "react-redux";
-import { getYachts, deleteYachts, publishYacht } from "@/lib/Features/Yachts/yachtsSlice";
-import type { RootState, AppDispatch } from '@/lib/Store/store';
+import {
+  useYachtsQuery,
+  useDeleteYachtMutation,
+  usePublishYachtMutation,
+} from "@/lib/api/yachts";
 import { FaChevronLeft, FaChevronRight, FaEye, FaTrash, FaGlobe, FaArchive } from "react-icons/fa";
 import { MdOutlineBathroom, MdClose } from "react-icons/md";
 import { TiTick } from "react-icons/ti";
@@ -16,10 +18,14 @@ import { IoPersonSharp } from "react-icons/io5";
 const YachtsDetail = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
-  const dispatch = useDispatch<AppDispatch>();
-  const { allYachts, getLoading, totalPages, total } = useSelector((state: RootState) => state.yachts);
-  const [currentPages, setCurrentPages] = useState(1);
   const itemsPerPage = 10;
+  const [currentPages, setCurrentPages] = useState(1);
+  const { data, isLoading: getLoading } = useYachtsQuery(currentPages, itemsPerPage);
+  const deleteYachtMutation = useDeleteYachtMutation();
+  const publishYachtMutation = usePublishYachtMutation();
+  const allYachts = data?.yachts ?? [];
+  const totalPages = data?.totalPages ?? 0;
+  const total = data?.total ?? 0;
   const [yachtsToDelete, setYachtsToDelete] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [publishingYachtId, setPublishingYachtId] = useState<string | null>(null);
@@ -33,11 +39,6 @@ const YachtsDetail = () => {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    dispatch(getYachts({ page: currentPages, limit: itemsPerPage }));
-  }, [currentPages, itemsPerPage, dispatch]);
-
 
   const filteredData = allYachts
     .filter(yachts =>
@@ -83,15 +84,14 @@ const YachtsDetail = () => {
 
   const handleConfirm = () => {
     if (yachtsToDelete) {
-      dispatch(deleteYachts(yachtsToDelete))
-        .unwrap()
+      deleteYachtMutation
+        .mutateAsync(yachtsToDelete)
         .then(() => {
           toast.success("Yachts deleted successfully");
           setIsModalOpen(false);
-          dispatch(getYachts({ page: currentPages, limit: itemsPerPage }));
         })
-        .catch((error) => {
-          toast.error(error.message || "Failed to delete yacht");
+        .catch((error: Error) => {
+          toast.error(error?.message || "Failed to delete yacht");
         });
     }
     setIsModalOpen(false);
@@ -118,21 +118,15 @@ const YachtsDetail = () => {
         } else {
           newStatus = "published";
         }
-        const resultAction = await dispatch(publishYacht({ yachtId: yachtToPublish, status: newStatus }));
-        if (publishYacht.fulfilled.match(resultAction)) {
-          const actionText = newStatus === "published" ? "published" : "archived";
-          toast.success(`Yacht ${actionText} successfully`);
-          // Refresh the yacht list to show updated status
-          dispatch(getYachts({ page: currentPages, limit: itemsPerPage }));
-        } else if (publishYacht.rejected.match(resultAction)) {
-          const errorPayload = resultAction.payload as {
-            error: { message: string };
-          };
-          toast.error(errorPayload?.error?.message || "Failed to update yacht status.");
-        }
+        await publishYachtMutation.mutateAsync({
+          yachtId: yachtToPublish,
+          status: newStatus,
+        });
+        const actionText = newStatus === "published" ? "published" : "archived";
+        toast.success(`Yacht ${actionText} successfully`);
       } catch (error) {
-        console.error(error);
-        toast.error("An unexpected error occurred");
+        const err = error as { message?: string };
+        toast.error(err?.message || "Failed to update yacht status.");
       } finally {
         setPublishingYachtId(null);
       }
@@ -150,20 +144,14 @@ const YachtsDetail = () => {
     if (yachtToUnpublish) {
       setPublishingYachtId(yachtToUnpublish);
       try {
-        const resultAction = await dispatch(publishYacht({ yachtId: yachtToUnpublish, status: "draft" }));
-        if (publishYacht.fulfilled.match(resultAction)) {
-          toast.success("Yacht unpublished successfully");
-          // Refresh the yacht list to show updated status
-          dispatch(getYachts({ page: currentPages, limit: itemsPerPage }));
-        } else if (publishYacht.rejected.match(resultAction)) {
-          const errorPayload = resultAction.payload as {
-            error: { message: string };
-          };
-          toast.error(errorPayload?.error?.message || "Failed to unpublish yacht.");
-        }
+        await publishYachtMutation.mutateAsync({
+          yachtId: yachtToUnpublish,
+          status: "draft",
+        });
+        toast.success("Yacht unpublished successfully");
       } catch (error) {
-        console.error(error);
-        toast.error("An unexpected error occurred");
+        const err = error as { message?: string };
+        toast.error(err?.message || "Failed to unpublish yacht.");
       } finally {
         setPublishingYachtId(null);
       }

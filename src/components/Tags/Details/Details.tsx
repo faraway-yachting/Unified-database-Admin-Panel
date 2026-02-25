@@ -2,16 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { MdEdit, MdKeyboardArrowLeft } from "react-icons/md";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/lib/Store/store";
+import type { TagsApiResponse } from "@/lib/api/tags";
 
 interface CustomersProps {
   goToNextTab: () => void;
+  tag?: TagsApiResponse | null;
 }
 
-const Details: React.FC<CustomersProps> = ({ goToNextTab }) => {
+const Details: React.FC<CustomersProps> = ({ goToNextTab, tag: tags }) => {
   const router = useRouter();
-  const { tags } = useSelector((state: RootState) => state.tags);
 
   const GeneralInfoData = [
     {

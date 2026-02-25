@@ -2,12 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { MdEdit, MdKeyboardArrowLeft } from "react-icons/md";
-import { useSelector } from "react-redux";
-import type { RootState } from '@/lib/Store/store';
 import DOMPurify from 'dompurify';
+import type { YachtsApiResponse } from "@/lib/api/yachts";
 
 interface CustomersProps {
     goToNextTab: () => void;
+    yacht?: YachtsApiResponse | null;
 }
 
 function formatDateToDDMMYY(dateString?: string) {
@@ -20,10 +20,9 @@ function formatDateToDDMMYY(dateString?: string) {
     return `${dd}/${mm}/${yy}`;
 }
 
-const Yachts: React.FC<CustomersProps> = ({ goToNextTab }) => {
+const Yachts: React.FC<CustomersProps> = ({ goToNextTab, yacht: yachts }) => {
 
     const router = useRouter();
-    const { yachts } = useSelector((state: RootState) => state.yachts);
 
     const GeneralInfoData = [
         {

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { usePathname } from "next/navigation";
 import { SidebarMenu } from "@/data/Sidebar/menu";
 import { MdKeyboardArrowRight } from "react-icons/md";
+import { useLogoutMutation } from "@/lib/api/auth";
 
 interface Props {
     menus: SidebarMenu[];
@@ -16,6 +17,7 @@ const Drawer: React.FC<Props> = ({ menus, isOpen, onClose }) => {
 
     const router = useRouter();
     const location = usePathname();
+    const logoutMutation = useLogoutMutation();
 
     const isActive = (link: string) => {
         if (link === "/") return location === "/";
@@ -24,7 +26,13 @@ const Drawer: React.FC<Props> = ({ menus, isOpen, onClose }) => {
 
     const handleNavigation = (link?: string, isLogout = false) => {
         if (isLogout) {
-            localStorage.removeItem("token");
+            logoutMutation.mutate(undefined, {
+                onSettled: () => {
+                    router.push(link ?? "/");
+                    onClose();
+                },
+            });
+            return;
         }
         if (link) {
             router.push(link);

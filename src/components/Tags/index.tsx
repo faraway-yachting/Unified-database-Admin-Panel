@@ -3,11 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import BreadCrum from "./BreadCrum";
-import { useSelector, useDispatch } from "react-redux";
-import { getTags, deleteTags } from "@/lib/Features/Tags/tagsSlice";
+import { useTagsQuery, useDeleteTagMutation } from "@/lib/api/tags";
 import { FaChevronLeft, FaChevronRight, FaEye } from "react-icons/fa";
 import { MdDelete } from "react-icons/md";
-import type { RootState, AppDispatch } from "@/lib/Store/store";
 import { MdClose } from "react-icons/md";
 import { TiTick } from "react-icons/ti";
 import { toast, ToastContainer } from "react-toastify";
@@ -16,20 +14,16 @@ import "react-toastify/dist/ReactToastify.css";
 const TagsDetail = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
-  const dispatch = useDispatch<AppDispatch>();
-  const { allTags, getLoading, totalPages, total } = useSelector(
-    (state: RootState) => state.tags
-  );
-  console.log(allTags, "Tags Data");
-  const [currentPages, setCurrentPages] = useState(1);
   const itemsPerPage = 10;
+  const [currentPages, setCurrentPages] = useState(1);
+  const { data, isLoading: getLoading } = useTagsQuery({ page: currentPages, limit: itemsPerPage });
+  const deleteTagMutation = useDeleteTagMutation();
+  const allTags = data?.tags ?? [];
+  const totalPages = data?.totalPages ?? 0;
+  const total = data?.total ?? 0;
   const [yachtsToDelete, setYachtsToDelete] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    dispatch(getTags({ page: currentPages, limit: itemsPerPage }));
-  }, [currentPages, itemsPerPage, dispatch]);
 
   const filteredData =
     allTags?.filter((tags) =>
@@ -72,15 +66,14 @@ const TagsDetail = () => {
 
   const handleConfirm = () => {
     if (yachtsToDelete) {
-      dispatch(deleteTags(yachtsToDelete))
-        .unwrap()
+      deleteTagMutation
+        .mutateAsync(yachtsToDelete)
         .then(() => {
           toast.success("Tags deleted successfully");
           setIsModalOpen(false);
-          dispatch(getTags({ page: currentPages, limit: itemsPerPage }));
         })
-        .catch((error) => {
-          toast.error(error.message || "Failed to delete tags");
+        .catch((error: Error) => {
+          toast.error(error?.message || "Failed to delete tags");
         });
     }
     setIsModalOpen(false);

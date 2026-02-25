@@ -7,16 +7,13 @@ import Button from "@/common/Button";
 import Lock from "@/icons/Lock";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { useDispatch } from "react-redux";
-import { resetPassword } from "@/lib/Features/Auth/authSlice";
-import type { AppDispatch } from '@/lib/Store/store';
+import { useResetPasswordMutation, getAuthErrorMessage } from "@/lib/api/auth";
 import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
-
 const ResetPasswordForm: React.FC = () => {
 
-    const dispatch = useDispatch<AppDispatch>();
+    const resetPasswordMutation = useResetPasswordMutation();
     const router = useRouter();
 
     const validationSchema = Yup.object({
@@ -46,28 +43,19 @@ const ResetPasswordForm: React.FC = () => {
                 return;
             }
             try {
-                const resultAction = await dispatch(resetPassword({
+                const result = await resetPasswordMutation.mutateAsync({
                     email: storedEmail,
                     newPassword: values.password,
-                }));
-
-                if (resetPassword.fulfilled.match(resultAction)) {
-                    const message = resultAction.payload?.message;
-                    toast.success(message, {
-                        onClose: () => {
-                            router.push("/congratulations");
-                        },
-                    });
-                    resetForm();
-                    localStorage.removeItem("userEmail");
-                } else if (resetPassword.rejected.match(resultAction)) {
-                    const errorPayload = resultAction.payload as { error: { message: string } };
-                    const errorMessage = errorPayload?.error?.message || "Something went wrong.";
-                    toast.error(errorMessage);
-                }
-            } catch (error) {
-                console.error("Login error:", error);
-                setFieldError("password", "An unexpected error occurred");
+                });
+                const message = (result as { message?: string })?.message;
+                toast.success(message ?? "Password reset", {
+                    onClose: () => router.push("/congratulations"),
+                });
+                resetForm();
+                localStorage.removeItem("userEmail");
+            } catch (err) {
+                const errorMessage = err != null ? getAuthErrorMessage(err) : "Something went wrong.";
+                toast.error(errorMessage);
             } finally {
                 setSubmitting(false);
             }

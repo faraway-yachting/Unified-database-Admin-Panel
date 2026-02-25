@@ -2,11 +2,9 @@
 import { useRouter } from "next/navigation";
 import Tick from "@/icons/Tick";
 import { MdKeyboardArrowLeft } from "react-icons/md";
-import { useSelector, useDispatch } from "react-redux";
-import type { RootState, AppDispatch } from "@/lib/Store/store";
-import { useFormik } from "formik";
-import { addBlog, AddBlogPayload } from "@/lib/Features/Blog/blogSlice";
+import { useAddBlogMutation } from "@/lib/api/blog";
 import { addBlogValidationSchema } from "@/lib/Validation/blogValidationSchema";
+import type { AddBlogPayload } from "@/lib/api/blog";
 import RichTextEditor from "@/common/TextEditor";
 import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
@@ -53,8 +51,8 @@ const blogFields = [
 
 const BlogDetail = () => {
   const router = useRouter();
-  const dispatch = useDispatch<AppDispatch>();
-  const loading = useSelector((state: RootState) => state.blog.addLoading);
+  const addBlogMutation = useAddBlogMutation();
+  const loading = addBlogMutation.isPending;
 
   const formik = useFormik<FormValues>({
     initialValues: {
@@ -99,19 +97,12 @@ const BlogDetail = () => {
         
         console.log("Submitting blog data:", blogData);
 
-        const resultAction = await dispatch(addBlog(blogData));
-        if (addBlog.fulfilled.match(resultAction)) {
-          toast.success("Blog created successfully");
-          router.push("/blog");
-        } else if (addBlog.rejected.match(resultAction)) {
-          const errorPayload = resultAction.payload as {
-            error: { message: string };
-          };
-          toast.error(errorPayload?.error?.message || "Failed to create blog");
-        }
-      } catch (error) {
-        console.error(error);
-        toast.error("An unexpected error occurred");
+        await addBlogMutation.mutateAsync(blogData);
+        toast.success("Blog created successfully");
+        router.push("/blog");
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to create blog";
+        toast.error(errorMessage);
       }
     },
   });

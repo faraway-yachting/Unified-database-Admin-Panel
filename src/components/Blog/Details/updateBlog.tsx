@@ -1,9 +1,8 @@
 "use client"
 
 import { useRouter } from "next/navigation";
-import { useSelector, useDispatch } from "react-redux";
-import { updateBlog, getBlogById } from "@/lib/Features/Blog/blogSlice";
-import type { AppDispatch, RootState } from '@/lib/Store/store';
+import { useBlogByIdQuery, useUpdateBlogMutation } from "@/lib/api/blog";
+import { useBlogByIdQuery, useUpdateBlogMutation } from "@/lib/api/blog";
 import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import { useFormik } from "formik";
@@ -58,16 +57,10 @@ const blogFields = [
 ];
 
 const BlogUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
-  const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { currentBlog, loading } = useSelector((state: RootState) => state.blog);
+  const { data: currentBlog, isLoading: loading } = useBlogByIdQuery(id.toString());
+  const updateBlogMutation = useUpdateBlogMutation();
   const hasInitialized = useRef(false);
-  // Ensure blog data is loaded when component mounts
-  useEffect(() => {
-    if (id) {
-      dispatch(getBlogById({ blogId: id.toString() }));
-    }
-  }, [id, dispatch]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -139,28 +132,17 @@ const BlogUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
           image: values.image || currentBlog?.image || "",
         };
 
-        const resultAction = await dispatch(
-          updateBlog({
-            blogId: id.toString(),
-            data: updateData,
-          })
-        );
-
-        if (updateBlog.fulfilled.match(resultAction)) {
-          toast.success("Blog updated successfully", {
-            onClose: () => {
-              router.push("/blog");
-            },
-          });
-          formik.resetForm();
-        } else if (updateBlog.rejected.match(resultAction)) {
-          const errorPayload = resultAction.payload as {
-            error: { message: string };
-          };
-          toast.error(errorPayload?.error?.message || "Something went wrong.");
-        }
-      } catch {
-        toast.error("An unexpected error occurred");
+        await updateBlogMutation.mutateAsync({
+          blogId: id.toString(),
+          data: updateData,
+        });
+        toast.success("Blog updated successfully", {
+          onClose: () => router.push("/blog"),
+        });
+        formik.resetForm();
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Something went wrong.";
+        toast.error(errorMessage);
       } finally {
         setSubmitting(false);
       }

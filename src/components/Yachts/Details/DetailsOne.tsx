@@ -1,10 +1,12 @@
 "use client"
 
 import Image from "next/image";
-import { useSelector } from "react-redux";
-import type { RootState } from '@/lib/Store/store';
 import { IoEyeOutline } from "react-icons/io5";
+import type { YachtsApiResponse } from "@/lib/api/yachts";
 
+interface YachtProps {
+    yacht?: YachtsApiResponse | null;
+}
 
 function getEmbedUrl(url?: string) {
     if (!url) return '';
@@ -19,9 +21,7 @@ function getEmbedUrl(url?: string) {
     return url;
 }
 
-const Yachts: React.FC = () => {
-
-    const { yachts } = useSelector((state: RootState) => state.yachts);
+const Yachts: React.FC<YachtProps> = ({ yacht: yachts }) => {
 
     return (
         <div className="flex flex-col gap-3">

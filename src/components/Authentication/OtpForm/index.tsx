@@ -5,9 +5,7 @@ import Image from "next/image";
 import Button from "@/common/Button";
 import { useRouter } from "next/navigation";
 import { useFormik } from "formik";
-import { useDispatch } from "react-redux";
-import { verifyOtp, resendOtp } from "@/lib/Features/Auth/authSlice";
-import type { AppDispatch } from '@/lib/Store/store';
+import { useVerifyOtpMutation, useResendOtpMutation, getAuthErrorMessage } from "@/lib/api/auth";
 import { toast, ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -17,7 +15,8 @@ interface FormValues {
 
 const OtpVerificationForm: React.FC = () => {
 
-    const dispatch = useDispatch<AppDispatch>();
+    const verifyOtpMutation = useVerifyOtpMutation();
+    const resendOtpMutation = useResendOtpMutation();
     const [resendTimer, setResendTimer] = useState(0);
     const router = useRouter();
 
@@ -41,26 +40,18 @@ const OtpVerificationForm: React.FC = () => {
             }
 
             try {
-                const resultAction = await dispatch(
-                    verifyOtp({ email: storedEmail, otp: otpString })
-                );
-                if (verifyOtp.fulfilled.match(resultAction)) {
-                    const message = resultAction.payload?.message;
-                    toast.success(message, {
-                        onClose: () => {
-                            router.push("/resetPassword");
-                        },
-                    });
-                    resetForm();
-                } else if (verifyOtp.rejected.match(resultAction)) {
-                    const errorPayload = resultAction.payload as { error: { message: string } };
-                    const errorMessage = errorPayload?.error?.message || "Invalid OTP.";
-                    toast.error(errorMessage);
-                    resetOtpInputs();
-                }
-            } catch (error) {
-                console.error("Unexpected error:", error);
-                setFieldError("otp", "An unexpected error occurred.");
+                const result = await verifyOtpMutation.mutateAsync({
+                    email: storedEmail,
+                    otp: otpString,
+                });
+                const message = (result as { message?: string })?.message;
+                toast.success(message ?? "Verified", {
+                    onClose: () => router.push("/resetPassword"),
+                });
+                resetForm();
+            } catch (err) {
+                const errorMessage = err != null ? getAuthErrorMessage(err) : "Invalid OTP.";
+                toast.error(errorMessage);
                 resetOtpInputs();
             } finally {
                 setSubmitting(false);
@@ -115,18 +106,12 @@ const OtpVerificationForm: React.FC = () => {
             resetOtpInputs();
             formik.setErrors({});
 
-            const resultAction = await dispatch(resendOtp({ email: storedEmail }));
-
-            if (resendOtp.fulfilled.match(resultAction)) {
-                const message = resultAction.payload?.message;
-                toast.success(message);
-            } else if (resendOtp.rejected.match(resultAction)) {
-                const errorMessage = resultAction.payload as string;
-                toast.error(errorMessage);
-            }
-        } catch (error) {
-            toast.error("Something went wrong while resending OTP.");
-            console.log(error);
+            const result = await resendOtpMutation.mutateAsync({ email: storedEmail });
+            const message = (result as { message?: string })?.message;
+            toast.success(message ?? "OTP sent");
+        } catch (err) {
+            const errorMessage = err != null ? getAuthErrorMessage(err) : "Something went wrong";
+            toast.error(errorMessage);
         }
     };
 

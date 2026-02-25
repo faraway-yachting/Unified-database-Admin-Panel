@@ -1,17 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useSelector } from "react-redux";
-import type { RootState } from "@/lib/Store/store";
 import { IoIosPricetags } from "react-icons/io";
+import type { TagsApiResponse } from "@/lib/api/tags";
 
 interface BreadCrumProps {
   showGeneralInfo: boolean;
+  tag?: TagsApiResponse | null;
 }
 
-const BreadCrum: React.FC<BreadCrumProps> = ({ showGeneralInfo }) => {
+const BreadCrum: React.FC<BreadCrumProps> = ({ showGeneralInfo, tag: tags }) => {
   const router = useRouter();
-  const { tags } = useSelector((state: RootState) => state.tags);
 
   const handleAddNewVehicle = () => {
     router.push("/tags/addnewtags");

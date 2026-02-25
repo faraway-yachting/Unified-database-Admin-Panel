@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import BreadCrum from "./BreadCrum";
-import { useSelector, useDispatch } from "react-redux";
-import { getBlogs, deleteBlog, publishBlog } from "@/lib/Features/Blog/blogSlice";
-import type { RootState, AppDispatch } from '@/lib/Store/store';
+import {
+  useBlogsQuery,
+  useDeleteBlogMutation,
+  usePublishBlogMutation,
+} from "@/lib/api/blog";
 import { FaChevronLeft, FaChevronRight, FaTrash, FaGlobe, FaArchive } from "react-icons/fa";
 import { MdClose } from "react-icons/md";
 import { TiTick } from "react-icons/ti";
@@ -16,10 +18,14 @@ import 'react-toastify/dist/ReactToastify.css';
 const BlogDetail = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
-  const dispatch = useDispatch<AppDispatch>();
-  const { allBlogs, getLoading, totalPages, total } = useSelector((state: RootState) => state.blog);
-  const [currentPages, setCurrentPages] = useState(1);
   const itemsPerPage = 10;
+  const [currentPages, setCurrentPages] = useState(1);
+  const { data, isLoading: getLoading } = useBlogsQuery(currentPages, itemsPerPage);
+  const deleteBlogMutation = useDeleteBlogMutation();
+  const publishBlogMutation = usePublishBlogMutation();
+  const allBlogs = data?.blogs ?? [];
+  const totalPages = data?.totalPages ?? 0;
+  const total = data?.total ?? 0;
   const [yachtsToDelete, setYachtsToDelete] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [publishingYachtId, setPublishingYachtId] = useState<string | null>(null);
@@ -33,10 +39,6 @@ const BlogDetail = () => {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    dispatch(getBlogs({ page: currentPages, limit: itemsPerPage }));
-  }, [currentPages, itemsPerPage, dispatch]);
 
   const filteredData = allBlogs
     .filter(blog =>
@@ -82,12 +84,11 @@ const BlogDetail = () => {
 
   const handleConfirm = () => {
     if (yachtsToDelete) {
-      dispatch(deleteBlog(yachtsToDelete))
-        .unwrap()
+      deleteBlogMutation
+        .mutateAsync(yachtsToDelete)
         .then(() => {
           toast.success("Blog deleted successfully");
           setIsModalOpen(false);
-          dispatch(getBlogs({ page: currentPages, limit: itemsPerPage }));
         })
         .catch((error: unknown) => {
           const errorMessage = error instanceof Error ? error.message : "Failed to delete blog";
@@ -113,27 +114,18 @@ const BlogDetail = () => {
       try {
         const currentBlog = allBlogs.find(blog => blog._id === yachtToPublish);
         let newStatus: "draft" | "published";
-        // Default to "draft" if no status field exists, otherwise check current status
         const currentStatus = currentBlog?.status || "draft";
         if (currentStatus === "published") {
           newStatus = "draft";
         } else {
           newStatus = "published";
         }
-        const resultAction = await dispatch(publishBlog({ blogId: yachtToPublish, status: newStatus }));
-        if (publishBlog.fulfilled.match(resultAction)) {
-          const actionText = newStatus === "published" ? "published" : "archived";
-          toast.success(`Blog ${actionText} successfully`);
-          // Refresh the blog list to show updated status
-          dispatch(getBlogs({ page: currentPages, limit: itemsPerPage }));
-        } else if (publishBlog.rejected.match(resultAction)) {
-          const errorPayload = resultAction.payload as {
-            error: { message: string };
-          };
-          toast.error(errorPayload?.error?.message || "Failed to update blog status.");
-        }
-      } catch {
-        toast.error("An unexpected error occurred");
+        await publishBlogMutation.mutateAsync({ blogId: yachtToPublish, status: newStatus });
+        const actionText = newStatus === "published" ? "published" : "archived";
+        toast.success(`Blog ${actionText} successfully`);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to update blog status.";
+        toast.error(errorMessage);
       } finally {
         setPublishingYachtId(null);
       }
@@ -151,19 +143,11 @@ const BlogDetail = () => {
     if (yachtToUnpublish) {
       setPublishingYachtId(yachtToUnpublish);
       try {
-        const resultAction = await dispatch(publishBlog({ blogId: yachtToUnpublish, status: "draft" }));
-        if (publishBlog.fulfilled.match(resultAction)) {
-          toast.success("Blog unpublished successfully");
-          // Refresh the blog list to show updated status
-          dispatch(getBlogs({ page: currentPages, limit: itemsPerPage }));
-        } else if (publishBlog.rejected.match(resultAction)) {
-          const errorPayload = resultAction.payload as {
-            error: { message: string };
-          };
-          toast.error(errorPayload?.error?.message || "Failed to unpublish blog.");
-        }
-      } catch {
-        toast.error("An unexpected error occurred");
+        await publishBlogMutation.mutateAsync({ blogId: yachtToUnpublish, status: "draft" });
+        toast.success("Blog unpublished successfully");
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to unpublish blog.";
+        toast.error(errorMessage);
       } finally {
         setPublishingYachtId(null);
       }

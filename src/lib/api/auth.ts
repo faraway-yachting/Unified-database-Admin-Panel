@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import axios, { AxiosError } from "axios";
+import { AxiosError } from "axios";
 import { config } from "../../../config";
+import { apiClient } from "@/lib/axios";
 
 export const authKeys = {
   all: ["auth"] as const,
@@ -10,6 +11,20 @@ export const authKeys = {
 export interface SignInCredentials {
   email: string;
   password: string;
+}
+
+/** User object returned from auth/me (and sign-in). */
+export interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  isActive?: boolean;
+  lastLogin?: string;
+  createdAt?: string;
+  regionAccess?: unknown[];
+  avatarUrl?: string;
 }
 
 export interface ForgotPasswordData {
@@ -27,27 +42,16 @@ export interface ResetPasswordData {
 }
 
 async function signInApi(credentials: SignInCredentials) {
-  const { data } = await axios.post(
-    config.api.auth.login,
-    credentials,
-    { withCredentials: true }
-  );
+  const { data } = await apiClient.post(config.api.auth.login, credentials);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
-  const token = data?.data?.token;
-  if (token && typeof window !== "undefined") {
-    localStorage.setItem("token", token);
-  }
+  // Tokens are stored in httpOnly cookies by the backend; no localStorage.
   return data;
 }
 
 async function forgotPasswordApi(body: ForgotPasswordData) {
-  const { data } = await axios.post(
-    config.api.auth.forgotPassword,
-    body,
-    { withCredentials: true }
-  );
+  const { data } = await apiClient.post(config.api.auth.forgotPassword, body);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
@@ -55,11 +59,7 @@ async function forgotPasswordApi(body: ForgotPasswordData) {
 }
 
 async function verifyOtpApi(body: OtpData) {
-  const { data } = await axios.post(
-    config.api.auth.verifyOtp,
-    body,
-    { withCredentials: true }
-  );
+  const { data } = await apiClient.post(config.api.auth.verifyOtp, body);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
@@ -67,11 +67,7 @@ async function verifyOtpApi(body: OtpData) {
 }
 
 async function resendOtpApi(body: { email: string }) {
-  const { data } = await axios.post(
-    config.api.auth.resendOtp,
-    body,
-    { withCredentials: true }
-  );
+  const { data } = await apiClient.post(config.api.auth.resendOtp, body);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
@@ -79,31 +75,26 @@ async function resendOtpApi(body: { email: string }) {
 }
 
 async function resetPasswordApi(body: ResetPasswordData) {
-  const { data } = await axios.post(
-    config.api.auth.resetPassword,
-    body,
-    { withCredentials: true }
-  );
+  const { data } = await apiClient.post(config.api.auth.resetPassword, body);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
   return data;
 }
 
-/** Fetch current user from auth/me (uses cookie). */
-async function fetchMeApi(): Promise<unknown> {
-  const { data } = await axios.get(config.api.auth.me, {
-    withCredentials: true,
-  });
+/** Fetch current user from auth/me (uses auth cookie via apiClient). */
+async function fetchMeApi(): Promise<AuthUser> {
+  const { data } = await apiClient.get(config.api.auth.me);
   if (data?.error) {
     throw new Error(data?.error?.message || "Unauthorized");
   }
-  return data?.data ?? data;
+  const raw = data?.data ?? data;
+  return raw as AuthUser;
 }
 
-/** Call backend logout to clear cookie. */
+/** Call backend logout to clear auth cookie. */
 async function logoutApi(): Promise<void> {
-  await axios.post(config.api.auth.logout, {}, { withCredentials: true });
+  await apiClient.post(config.api.auth.logout, {});
 }
 
 function getErrorMessage(error: unknown): string {
@@ -121,8 +112,8 @@ export function useSignInMutation() {
     mutationKey: [...authKeys.all, "signin"],
     mutationFn: signInApi,
     onSuccess: (data) => {
-      const user = (data as { data?: unknown })?.data ?? data;
-      queryClient.setQueryData(authKeys.user(), user);
+      const user = (data as { user?: AuthUser })?.user ?? (data as AuthUser);
+      if (user) queryClient.setQueryData(authKeys.user(), user);
     },
   });
 }
@@ -132,7 +123,8 @@ export function useAuthUserQuery() {
     queryKey: authKeys.user(),
     queryFn: fetchMeApi,
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 8 * 60 * 60 * 1000, // 8 hours to match backend token expiry
+    refetchOnWindowFocus: false, // avoid redirect on transient refetch failures
   });
 }
 
@@ -141,11 +133,8 @@ export function useLogoutMutation() {
   return useMutation({
     mutationKey: [...authKeys.all, "logout"],
     mutationFn: async () => {
-      if (typeof window !== "undefined") {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-      }
       await logoutApi();
+      // Backend clears auth cookie; no localStorage to clear.
     },
     onSuccess: () => {
       queryClient.setQueryData(authKeys.user(), null);

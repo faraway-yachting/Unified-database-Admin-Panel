@@ -3,6 +3,7 @@ import { IBM_Plex_Sans, Inter, Poppins } from "next/font/google";
 import "./globals.css";
 import QueryProvider from "./QueryProvider";
 import { ThemeProvider } from "@/context/ThemeContext";
+import { LoadingProvider } from "@/context/LoadingContext";
 
 const iBMPlexSans = IBM_Plex_Sans({
   variable: "--font-ibm-plex-sans",
@@ -37,7 +38,9 @@ export default function RootLayout({
         className={`${iBMPlexSans.variable} ${inter.variable} ${poppins.variable} antialiased`}
       >
         <QueryProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <LoadingProvider>{children}</LoadingProvider>
+          </ThemeProvider>
         </QueryProvider>
       </body>
     </html>

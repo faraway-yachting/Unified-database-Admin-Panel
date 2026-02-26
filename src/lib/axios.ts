@@ -1,9 +1,9 @@
-import axios from "axios";
+import axios, { type InternalAxiosRequestConfig } from "axios";
 import { config } from "../../config";
 
 /**
- * Axios instance using config base URL and credentials.
- * Auth header is added per-request from localStorage so it works in client components.
+ * Axios instance with credentials so cookies are sent.
+ * Auth uses cookies only (no Bearer from localStorage).
  */
 export const apiClient = axios.create({
   baseURL: config.baseApiUrl,
@@ -13,18 +13,29 @@ export const apiClient = axios.create({
   },
 });
 
-apiClient.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+/** Mark a request as already retried after refresh to avoid infinite loop */
+const RETRIED_KEY = "_authRetried";
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (err) => {
+    const originalRequest = err.config as InternalAxiosRequestConfig & { [RETRIED_KEY]?: boolean };
+
+    if (err.response?.status !== 401 || originalRequest[RETRIED_KEY]) {
+      return Promise.reject(err);
+    }
+
+    originalRequest[RETRIED_KEY] = true;
+
+    try {
+      await apiClient.post(config.api.auth.refresh, {});
+      return apiClient(originalRequest);
+    } catch (refreshErr) {
+      return Promise.reject(refreshErr);
     }
   }
-  return config;
-});
+);
 
 export function getAuthHeaders(): { Authorization: string } | {} {
-  if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {};
 }

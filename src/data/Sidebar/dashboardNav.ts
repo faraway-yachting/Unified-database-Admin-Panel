@@ -20,5 +20,5 @@ export const dashboardNavItems: NavItem[] = [
   { icon: Users, label: "CRM", href: "/crm" },
   { icon: MapPin, label: "Regions", href: "/regions" },
   { icon: Settings, label: "Settings", href: "/settings" },
-  { icon: LogOut, label: "Logout", href: "/", isLogout: true },
+  { icon: LogOut, label: "Logout", href: "/login", isLogout: true },
 ];

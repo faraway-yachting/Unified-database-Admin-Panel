@@ -1,129 +1,105 @@
 "use client";
 
-import { useState } from "react";
-import { Ship, CheckCircle, Wrench, Calendar } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Ship, CheckCircle, Wrench, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useFleetTopBarActions } from "@/context/FleetTopBarActionsContext";
+import {
+  useYachtsQuery,
+  DEFAULT_YACHT_IMAGE,
+  parseLength,
+  yachtTypeToDisplay,
+  yachtStatusToDisplay,
+  type YachtListItem,
+  type YachtsListFilters,
+} from "@/lib/api/yachts";
 import { FleetKPICard } from "./FleetKPICard";
 import { YachtCard, type Yacht } from "./YachtCard";
 import { YachtDetailDrawer } from "./YachtDetailDrawer";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 
-const fleetData: Yacht[] = [
-  {
-    id: "Y-001",
-    name: "Azure Dream",
-    type: "Sailboat",
-    image:
-      "https://images.unsplash.com/photo-1598555071897-42022f8bfca7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=800",
-    length: 82,
-    capacity: 12,
-    year: 2022,
-    region: "Mediterranean",
-    status: "Available",
-  },
-  {
-    id: "Y-002",
-    name: "Ocean Majesty",
-    type: "Motor Yacht",
-    image:
-      "https://images.unsplash.com/photo-1683964012191-7cd5617e164d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=800",
-    length: 95,
-    capacity: 10,
-    year: 2023,
-    region: "Caribbean",
-    status: "Booked",
-  },
-  {
-    id: "Y-003",
-    name: "Twin Seas",
-    type: "Catamaran",
-    image:
-      "https://images.unsplash.com/photo-1769610352818-cf8fa29ccf9a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=800",
-    length: 68,
-    capacity: 8,
-    year: 2021,
-    region: "Pacific",
-    status: "Available",
-  },
-  {
-    id: "Y-004",
-    name: "Wind Chaser",
-    type: "Sailboat",
-    image:
-      "https://images.unsplash.com/photo-1692496697713-0e360f67fdb4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=800",
-    length: 75,
-    capacity: 10,
-    year: 2020,
-    region: "Mediterranean",
-    status: "Maintenance",
-  },
-  {
-    id: "Y-005",
-    name: "Platinum Wave",
-    type: "Motor Yacht",
-    image:
-      "https://images.unsplash.com/photo-1633892224063-8ef7ff14508f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=800",
-    length: 105,
-    capacity: 14,
-    year: 2024,
-    region: "Caribbean",
-    status: "Available",
-  },
-  {
-    id: "Y-006",
-    name: "Sea Harmony",
-    type: "Catamaran",
-    image:
-      "https://images.unsplash.com/photo-1705104159597-68a08a9ca8fe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=800",
-    length: 72,
-    capacity: 9,
-    year: 2022,
-    region: "Indian Ocean",
-    status: "Booked",
-  },
-  {
-    id: "Y-007",
-    name: "Silver Horizon",
-    type: "Motor Yacht",
-    image:
-      "https://images.unsplash.com/photo-1740482881430-53d0e1c04fef?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=800",
-    length: 88,
-    capacity: 11,
-    year: 2023,
-    region: "Mediterranean",
-    status: "Available",
-  },
-  {
-    id: "Y-008",
-    name: "Sunset Paradise",
-    type: "Sailboat",
-    image:
-      "https://images.unsplash.com/photo-1598555071897-42022f8bfca7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=800",
-    length: 78,
-    capacity: 10,
-    year: 2021,
-    region: "Pacific",
-    status: "Available",
-  },
-];
+const PAGE_SIZE = 12;
 
-function statusToFilter(status: string): string {
-  const s = status.toLowerCase();
-  if (s === "available" || s === "booked" || s === "maintenance") return s;
-  return "all";
+function apiYachtToCardYacht(api: YachtListItem): Yacht {
+  const image =
+    api.images?.length
+      ? api.images.find((i) => i.isCover)?.imageUrl ?? api.images[0]?.imageUrl
+      : DEFAULT_YACHT_IMAGE;
+  const lengthM = parseLength(api.lengthM);
+  const lengthFt = Math.round(lengthM * 3.28084);
+  const regionName = api.region?.name ?? "—";
+  return {
+    id: api.id,
+    name: api.name,
+    type: yachtTypeToDisplay(api.type),
+    image,
+    length: lengthFt || 0,
+    capacity: api.capacityGuests ?? 0,
+    year: api.yearBuilt ?? 0,
+    region: regionName,
+    status: yachtStatusToDisplay(api.status),
+  };
+}
+
+function buildListFilters(
+  activeFilter: string,
+  fleetFilters: ReturnType<typeof useFleetTopBarActions>["fleetFilters"]
+): YachtsListFilters {
+  const status =
+    activeFilter === "all"
+      ? fleetFilters.status || undefined
+      : activeFilter === "available" || activeFilter === "booked" || activeFilter === "maintenance"
+        ? activeFilter
+        : fleetFilters.status || undefined;
+
+  return {
+    regionId: fleetFilters.regionId || undefined,
+    type: fleetFilters.type || undefined,
+    status: status || undefined,
+    minCapacity: fleetFilters.minCapacity > 0 ? fleetFilters.minCapacity : undefined,
+    maxCapacity: fleetFilters.maxCapacity < 100 ? fleetFilters.maxCapacity : undefined,
+    isActive: fleetFilters.isActive || undefined,
+    includeCompany: fleetFilters.includeCompany || undefined,
+    includeRegion: true,
+    includeImages: true,
+  };
 }
 
 export default function FleetManagement() {
   const { colors } = useTheme();
-  const { activeFilter, setActiveFilter } = useFleetTopBarActions();
+  const { activeFilter, setActiveFilter, fleetFilters } = useFleetTopBarActions();
+  const [page, setPage] = useState(1);
   const [selectedYacht, setSelectedYacht] = useState<Yacht | null>(null);
 
-  const filteredYachts =
-    activeFilter === "all"
-      ? fleetData
-      : fleetData.filter(
-          (yacht) => statusToFilter(yacht.status) === activeFilter
-        );
+  const filters = useMemo(
+    () => buildListFilters(activeFilter, fleetFilters),
+    [activeFilter, fleetFilters]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeFilter, fleetFilters.regionId, fleetFilters.type, fleetFilters.status, fleetFilters.minCapacity, fleetFilters.maxCapacity]);
+
+  const { data, isLoading, isError, error } = useYachtsQuery(page, PAGE_SIZE, filters);
+
+  const cardYachts = useMemo(
+    () => (data?.yachts ?? []).map(apiYachtToCardYacht),
+    [data?.yachts]
+  );
+
+  const kpis = useMemo(() => {
+    const total = data?.total ?? 0;
+    const onPage = data?.yachts ?? [];
+    const available = onPage.filter((y) => y.status?.toLowerCase() === "available").length;
+    const booked = onPage.filter((y) => y.status?.toLowerCase() === "booked").length;
+    const maintenance = onPage.filter((y) => y.status?.toLowerCase() === "maintenance").length;
+    return { total, available, booked, maintenance };
+  }, [data?.total, data?.yachts]);
+
+  const totalPages = data?.totalPages ?? 0;
+  const currentPage = data?.currentPage ?? 1;
+  const hasNext = currentPage < totalPages;
+  const hasPrev = currentPage > 1;
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
@@ -133,29 +109,25 @@ export default function FleetManagement() {
           <FleetKPICard
             icon={Ship}
             label="Total Yachts"
-            value="87"
-            change={5}
+            value={String(kpis.total)}
             statusColor={colors.accent}
           />
           <FleetKPICard
             icon={CheckCircle}
-            label="Available Now"
-            value="32"
-            change={12}
+            label="Available (this page)"
+            value={String(kpis.available)}
             statusColor={colors.success}
           />
           <FleetKPICard
             icon={Calendar}
-            label="Currently Booked"
-            value="48"
-            change={-8}
+            label="Booked (this page)"
+            value={String(kpis.booked)}
             statusColor={colors.accentGold}
           />
           <FleetKPICard
             icon={Wrench}
-            label="In Maintenance"
-            value="7"
-            change={-15}
+            label="Maintenance (this page)"
+            value={String(kpis.maintenance)}
             statusColor={colors.danger}
           />
         </div>
@@ -167,6 +139,7 @@ export default function FleetManagement() {
             onChange={(e) => {
               const v = e.target.value as "all" | "available" | "booked" | "maintenance";
               setActiveFilter(v);
+              setPage(1);
             }}
             className="w-full px-4 py-2 rounded-lg border text-sm"
             style={{
@@ -182,17 +155,94 @@ export default function FleetManagement() {
           </select>
         </div>
 
+        {/* Loading / Error */}
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner size="lg" text="Loading fleet..." />
+          </div>
+        )}
+        {isError && (
+          <div
+            className="rounded-xl border p-6 text-center"
+            style={{
+              backgroundColor: colors.cardBg,
+              borderColor: colors.danger,
+              color: colors.textPrimary,
+            }}
+          >
+            <p className="font-medium">Failed to load yachts.</p>
+            <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+              {error instanceof Error ? error.message : "Please try again later."}
+            </p>
+          </div>
+        )}
+
         {/* Fleet Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
-          {filteredYachts.map((yacht) => (
-            <YachtCard
-              key={yacht.id}
-              yacht={yacht}
-              onClick={() => setSelectedYacht(yacht)}
-              onEdit={() => setSelectedYacht(yacht)}
-            />
-          ))}
-        </div>
+        {!isLoading && !isError && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+              {cardYachts.map((yacht) => (
+                <YachtCard
+                  key={yacht.id}
+                  yacht={yacht}
+                  onClick={() => setSelectedYacht(yacht)}
+                  onEdit={() => setSelectedYacht(yacht)}
+                />
+              ))}
+            </div>
+
+            {cardYachts.length === 0 && (
+              <div
+                className="rounded-xl border p-12 text-center"
+                style={{
+                  backgroundColor: colors.cardBg,
+                  borderColor: colors.cardBorder,
+                  color: colors.textSecondary,
+                }}
+              >
+                No yachts match your filters. Try changing filters or add a new yacht.
+              </div>
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div
+                className="flex items-center justify-center gap-4 py-6"
+                style={{ color: colors.textPrimary }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={!hasPrev}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: colors.cardBg,
+                    borderColor: colors.cardBorder,
+                  }}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Previous
+                </button>
+                <span className="text-sm">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={!hasNext}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: colors.cardBg,
+                    borderColor: colors.cardBorder,
+                  }}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </>
+        )}
 
         {selectedYacht && (
           <YachtDetailDrawer

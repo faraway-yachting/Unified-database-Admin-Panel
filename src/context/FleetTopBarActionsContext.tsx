@@ -8,16 +8,47 @@ import {
   type ReactNode,
 } from "react";
 
-type FleetFilter = "all" | "available" | "booked" | "maintenance";
+export type FleetFilter = "all" | "available" | "booked" | "maintenance";
+
+export type FleetYachtType = "sailboat" | "motor" | "catamaran" | "gulet";
+export type FleetStatusFilter = "available" | "booked" | "maintenance" | "retired";
+
+export interface FleetFilters {
+  regionId: string;
+  type: FleetYachtType | "";
+  status: FleetStatusFilter | "";
+  minCapacity: number;
+  maxCapacity: number;
+  isActive: boolean;
+  includeCompany: boolean;
+  includeRegion: boolean;
+  includeImages: boolean;
+}
+
+export const defaultFleetFilters: FleetFilters = {
+  regionId: "",
+  type: "",
+  status: "",
+  minCapacity: 0,
+  maxCapacity: 100,
+  isActive: false,
+  includeCompany: false,
+  includeRegion: false,
+  includeImages: false,
+};
 
 interface FleetTopBarActionsContextValue {
   activeFilter: FleetFilter;
   setActiveFilter: (filter: FleetFilter) => void;
+  fleetFilters: FleetFilters;
+  setFleetFilters: (filters: FleetFilters | ((prev: FleetFilters) => FleetFilters)) => void;
 }
 
 const defaultValue: FleetTopBarActionsContextValue = {
   activeFilter: "all",
   setActiveFilter: () => {},
+  fleetFilters: defaultFleetFilters,
+  setFleetFilters: () => {},
 };
 
 const FleetTopBarActionsContext =
@@ -25,10 +56,23 @@ const FleetTopBarActionsContext =
 
 export function FleetTopBarActionsProvider({ children }: { children: ReactNode }) {
   const [activeFilter, setActiveFilter] = useState<FleetFilter>("all");
+  const [fleetFilters, setFleetFiltersState] = useState<FleetFilters>(defaultFleetFilters);
+
   const setFilter = useCallback((filter: FleetFilter) => {
     setActiveFilter(filter);
   }, []);
-  const value = { activeFilter, setActiveFilter: setFilter };
+
+  const setFleetFilters = useCallback((f: FleetFilters | ((prev: FleetFilters) => FleetFilters)) => {
+    setFleetFiltersState(typeof f === "function" ? f : () => f);
+  }, []);
+
+  const value = {
+    activeFilter,
+    setActiveFilter: setFilter,
+    fleetFilters,
+    setFleetFilters,
+  };
+
   return (
     <FleetTopBarActionsContext.Provider value={value}>
       {children}
@@ -40,5 +84,3 @@ export function useFleetTopBarActions() {
   const context = useContext(FleetTopBarActionsContext);
   return context ?? defaultValue;
 }
-
-export type { FleetFilter };

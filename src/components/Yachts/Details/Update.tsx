@@ -9,7 +9,6 @@ import {
   useUpdateYachtMutation,
 } from "@/lib/api/yachts";
 import { useTagsQuery } from "@/lib/api/tags";
-import { useTagsQuery } from "@/lib/api/tags";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useFormik } from "formik";

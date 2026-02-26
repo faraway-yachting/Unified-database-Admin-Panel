@@ -3,7 +3,7 @@
 import { useEffect, ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import TopBar from "@/components/TopBar";
+import TopBar, { HEADER_HEIGHT } from "@/components/TopBar";
 import { FleetTopBarActionsProvider } from "@/context/FleetTopBarActionsContext";
 import { PackageBuilderProvider } from "@/context/PackageBuilderContext";
 import { BookingsProvider } from "@/context/BookingsContext";
@@ -19,6 +19,7 @@ import { CRMProvider } from "@/context/CRMContext";
 import { dashboardNavItems } from "@/data/Sidebar/dashboardNav";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuthUserQuery } from "@/lib/api/auth";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 interface Props {
   children: ReactNode;
@@ -27,8 +28,6 @@ interface Props {
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard Overview",
   "/yachts": "Fleet Management",
-  "/tags": "Tags",
-  "/blog": "Blog",
   "/settings": "Settings",
   "/packages": "Package Builder",
   "/bookings": "Bookings",
@@ -40,27 +39,40 @@ const routeTitles: Record<string, string> = {
 function getTitle(pathname: string): string {
   if (routeTitles[pathname]) return routeTitles[pathname];
   if (pathname.startsWith("/yachts/")) return "Fleet";
-  if (pathname.startsWith("/tags/")) return "Tags";
-  if (pathname.startsWith("/blog/")) return "Blog";
   return "Dashboard";
+}
+
+/** e.g. "super_admin" -> "Super Admin" */
+function formatRole(role: string): string {
+  if (!role) return "User";
+  return role
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ");
 }
 
 const IndexLayout: React.FC<Props> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
   const { colors } = useTheme();
-  const { data: user, isLoading } = useAuthUserQuery();
+  const { data: user, isLoading, isError, error, isSuccess } = useAuthUserQuery();
   const isAuthenticated = !!user;
 
+  // Only redirect when we know the user is unauthenticated: initial load success with no user, or 401.
+  // Do not redirect on network/transient errors to avoid kicking the user out.
+  const shouldRedirectToLogin =
+    !isLoading &&
+    !user &&
+    (isSuccess || (isError && (error as { response?: { status?: number } })?.response?.status === 401));
+
   useEffect(() => {
-    if (isLoading) return;
-    if (!isAuthenticated) {
-      router.replace("/");
+    if (shouldRedirectToLogin) {
+      router.replace("/login");
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [shouldRedirectToLogin, router]);
 
   if (isLoading) {
-    return null;
+    return <LoadingSpinner variant="fullScreen" size="lg" text="Loading..." />;
   }
 
   if (!isAuthenticated) {
@@ -101,7 +113,12 @@ const IndexLayout: React.FC<Props> = ({ children }) => {
           ) : undefined
         }
       />
-      <main className="flex-1">{children}</main>
+      <main
+        className="flex-1 flex flex-col"
+        style={{ paddingTop: HEADER_HEIGHT }}
+      >
+        {children}
+      </main>
     </>
   );
 
@@ -112,9 +129,9 @@ const IndexLayout: React.FC<Props> = ({ children }) => {
     >
       <Sidebar
         navItems={dashboardNavItems}
-        adminName="Sarah Mitchell"
-        adminRole="Fleet Manager"
-        adminAvatar="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop"
+        adminName={[user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.email ?? ""}
+        adminRole={formatRole(user?.role ?? "")}
+        adminAvatar={user?.avatarUrl}
       />
       <div className="lg:ml-[240px] flex-1 flex flex-col min-h-screen">
         {isYachts ? (

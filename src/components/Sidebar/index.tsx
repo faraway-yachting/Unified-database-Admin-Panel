@@ -65,7 +65,7 @@ interface SidebarProps {
   navItems: NavItem[];
   adminName: string;
   adminRole: string;
-  adminAvatar: string;
+  adminAvatar?: string | null;
 }
 
 export function Sidebar({
@@ -80,10 +80,21 @@ export function Sidebar({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const logoutMutation = useLogoutMutation();
 
+  const safeAdminName = (adminName ?? "").trim() || "User";
+  const safeAdminRole = adminRole ?? "User";
+
+  const initials = safeAdminName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((s) => s.charAt(0))
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "?";
+
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
       onSettled: () => {
-        router.push("/");
+        router.push("/login");
         setIsMobileMenuOpen(false);
       },
     });
@@ -163,8 +174,8 @@ export function Sidebar({
         <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
           {regularItems.map((item) => {
             const isActive =
-              item.href === "/"
-                ? pathname === "/"
+              item.href === "/login"
+                ? pathname === "/login"
                 : pathname === item.href || pathname.startsWith(item.href + "/");
             return (
               <SidebarNavItem
@@ -223,26 +234,39 @@ export function Sidebar({
               e.currentTarget.style.backgroundColor = colors.cardBorder;
             }}
           >
-            <Image
-              src={adminAvatar}
-              alt={adminName}
-              width={40}
-              height={40}
-              className="w-10 h-10 rounded-full border-2 shrink-0 object-cover"
-              style={{ borderColor: colors.accent }}
-            />
+            {adminAvatar ? (
+              <Image
+                src={adminAvatar}
+                alt={safeAdminName}
+                width={40}
+                height={40}
+                className="w-10 h-10 rounded-full border-2 shrink-0 object-cover"
+                style={{ borderColor: colors.accent }}
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-full border-2 shrink-0 flex items-center justify-center text-sm font-semibold"
+                style={{
+                  borderColor: colors.accent,
+                  backgroundColor: `${colors.accent}20`,
+                  color: colors.accent,
+                }}
+              >
+                {initials}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div
                 className="text-sm font-medium truncate"
                 style={{ color: colors.textPrimary }}
               >
-                {adminName}
+                {safeAdminName}
               </div>
               <div
                 className="text-xs"
                 style={{ color: colors.textSecondary }}
               >
-                {adminRole}
+                {safeAdminRole}
               </div>
             </div>
           </div>

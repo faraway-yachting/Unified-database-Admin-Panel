@@ -11,7 +11,7 @@ const CongratulationsForm: React.FC = () => {
         initialValues: {
         },
         onSubmit: async () => {
-            router.push("/");
+            router.push("/login");
         },
     });
 

@@ -15,6 +15,7 @@ export interface Yacht {
   name: string;
   type: string;
   image: string;
+  images?: string[];
   length: number;
   capacity: number;
   year: number;

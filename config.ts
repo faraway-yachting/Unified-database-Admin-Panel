@@ -49,6 +49,7 @@ export const config = {
       list: url('/api/yachts'),
       create: url('/api/yachts'),
       byId: (id: string) => url(`/api/yachts/${id}`),
+      detail: (id: string) => url(`/api/yachts/${id}/detail`),
       update: (id: string) => url(`/api/yachts/${id}`),
       delete: (id: string) => url(`/api/yachts/${id}`),
       status: (id: string) => url(`/api/yachts/${id}/status`),

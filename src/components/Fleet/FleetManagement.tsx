@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Ship, CheckCircle, Wrench, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
-import { useFleetTopBarActions } from "@/context/FleetTopBarActionsContext";
+import { useFleetTopBarActions, defaultFleetFilters } from "@/context/FleetTopBarActionsContext";
 import {
   useYachtsQuery,
   DEFAULT_YACHT_IMAGE,
@@ -16,15 +16,22 @@ import {
 import { FleetKPICard } from "./FleetKPICard";
 import { YachtCard, type Yacht } from "./YachtCard";
 import { YachtDetailDrawer } from "./YachtDetailDrawer";
+import { YachtEditDrawer } from "./YachtEditDrawer";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 const PAGE_SIZE = 12;
 
 function apiYachtToCardYacht(api: YachtListItem): Yacht {
-  const image =
-    api.images?.length
-      ? api.images.find((i) => i.isCover)?.imageUrl ?? api.images[0]?.imageUrl
-      : DEFAULT_YACHT_IMAGE;
+  const coverImage = api.images?.find((i) => i.isCover)?.imageUrl;
+  const image = coverImage ?? api.images?.[0]?.imageUrl ?? DEFAULT_YACHT_IMAGE;
+  const images = api.images?.length
+    ? [
+        ...(coverImage ? [coverImage] : []),
+        ...api.images
+          .map((i) => i.imageUrl)
+          .filter((url) => !!url && url !== coverImage),
+      ]
+    : undefined;
   const lengthM = parseLength(api.lengthM);
   const lengthFt = Math.round(lengthM * 3.28084);
   const regionName = api.region?.name ?? "—";
@@ -33,6 +40,7 @@ function apiYachtToCardYacht(api: YachtListItem): Yacht {
     name: api.name,
     type: yachtTypeToDisplay(api.type),
     image,
+    images,
     length: lengthFt || 0,
     capacity: api.capacityGuests ?? 0,
     year: api.yearBuilt ?? 0,
@@ -57,11 +65,14 @@ function buildListFilters(
     type: fleetFilters.type || undefined,
     status: status || undefined,
     minCapacity: fleetFilters.minCapacity > 0 ? fleetFilters.minCapacity : undefined,
-    maxCapacity: fleetFilters.maxCapacity < 100 ? fleetFilters.maxCapacity : undefined,
+    maxCapacity:
+      fleetFilters.maxCapacity !== defaultFleetFilters.maxCapacity
+        ? fleetFilters.maxCapacity
+        : undefined,
     isActive: fleetFilters.isActive || undefined,
     includeCompany: fleetFilters.includeCompany || undefined,
-    includeRegion: true,
-    includeImages: true,
+    includeRegion: fleetFilters.includeRegion || undefined,
+    includeImages: fleetFilters.includeImages || undefined,
   };
 }
 
@@ -70,6 +81,7 @@ export default function FleetManagement() {
   const { activeFilter, setActiveFilter, fleetFilters } = useFleetTopBarActions();
   const [page, setPage] = useState(1);
   const [selectedYacht, setSelectedYacht] = useState<Yacht | null>(null);
+  const [selectedEditYacht, setSelectedEditYacht] = useState<Yacht | null>(null);
 
   const filters = useMemo(
     () => buildListFilters(activeFilter, fleetFilters),
@@ -78,7 +90,18 @@ export default function FleetManagement() {
 
   useEffect(() => {
     setPage(1);
-  }, [activeFilter, fleetFilters.regionId, fleetFilters.type, fleetFilters.status, fleetFilters.minCapacity, fleetFilters.maxCapacity]);
+  }, [
+    activeFilter,
+    fleetFilters.regionId,
+    fleetFilters.type,
+    fleetFilters.status,
+    fleetFilters.minCapacity,
+    fleetFilters.maxCapacity,
+    fleetFilters.isActive,
+    fleetFilters.includeCompany,
+    fleetFilters.includeRegion,
+    fleetFilters.includeImages,
+  ]);
 
   const { data, isLoading, isError, error } = useYachtsQuery(page, PAGE_SIZE, filters);
 
@@ -186,7 +209,7 @@ export default function FleetManagement() {
                   key={yacht.id}
                   yacht={yacht}
                   onClick={() => setSelectedYacht(yacht)}
-                  onEdit={() => setSelectedYacht(yacht)}
+                  onEdit={() => setSelectedEditYacht(yacht)}
                 />
               ))}
             </div>
@@ -248,6 +271,12 @@ export default function FleetManagement() {
           <YachtDetailDrawer
             yacht={selectedYacht}
             onClose={() => setSelectedYacht(null)}
+          />
+        )}
+        {selectedEditYacht && (
+          <YachtEditDrawer
+            yacht={selectedEditYacht}
+            onClose={() => setSelectedEditYacht(null)}
           />
         )}
       </div>

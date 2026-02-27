@@ -1,706 +1,583 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  NewYachtsData,
-  RichTextEditorSections,
-} from "@/data/Yachts";
-import { MdDeleteOutline, MdKeyboardArrowLeft } from "react-icons/md";
-import Image from "next/image";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAddYachtMutation } from "@/lib/api/yachts";
-import { useTagsQuery } from "@/lib/api/tags";
+import { ChevronLeft, Plus } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
-import { useFormik } from "formik";
 import "react-toastify/dist/ReactToastify.css";
-import {
-  yachtsvalidationSchema,
-  FormYachtsValues,
-} from "@/lib/Validation/addyachtsValidationSchema";
-import RichTextEditor from "@/common/TextEditor";
-import Tick from "@/icons/Tick";
-import { RiArrowDownSLine } from "react-icons/ri";
+import { useTheme } from "@/context/ThemeContext";
+import { useCreateYachtMutation } from "@/lib/api/yachts";
+import { useRegionsQuery } from "@/lib/api/regions";
+import { useCharterCompaniesQuery } from "@/lib/api/charterCompanies";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+
+type FormErrors = Partial<Record<keyof CreateFormState, string>>;
+
+type CreateFormState = {
+  companyId: string;
+  regionId: string;
+  name: string;
+  type: string;
+  capacityGuests: string;
+  capacityCrew: string;
+  lengthM: string;
+  beamM: string;
+  yearBuilt: string;
+  engineType: string;
+  engineHp: string;
+  cruiseSpeedKnots: string;
+  fuelCapacityL: string;
+  homePort: string;
+  status: string;
+  isActive: boolean;
+};
+
+const TYPE_OPTIONS = [
+  { label: "Sailboat", value: "sailboat" },
+  { label: "Motor Yacht", value: "motor" },
+  { label: "Catamaran", value: "catamaran" },
+  { label: "Gulet", value: "gulet" },
+];
+
+const STATUS_OPTIONS = [
+  { label: "Available", value: "available" },
+  { label: "Booked", value: "booked" },
+  { label: "Maintenance", value: "maintenance" },
+  { label: "Retired", value: "retired" },
+];
 
 const AddNewYachts: React.FC = () => {
-
-  const addYachtMutation = useAddYachtMutation();
+  const { colors } = useTheme();
   const router = useRouter();
-  const { data: tagsData } = useTagsQuery();
-  const allTags = tagsData?.tags ?? [];
-  const loading = addYachtMutation.isPending;
-  const [isTagsOpen, setIsTagsOpen] = useState(false);
+  const createYachtMutation = useCreateYachtMutation();
+  const { data: regions, isLoading: regionsLoading } = useRegionsQuery();
+  const { data: companies, isLoading: companiesLoading } = useCharterCompaniesQuery();
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (isTagsOpen && !target.closest('.tags-dropdown')) {
-        setIsTagsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [isTagsOpen]);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files[0]) {
-      const file = files[0];
-      if (file.size > 1 * 1024 * 1024) {
-        formik.setFieldTouched("Primary Image", true, false);
-        formik.setFieldError("Primary Image", "File must be 1MB or smaller");
-        e.target.value = "";
-        return;
-      }
-      formik.setFieldValue("Primary Image", file);
-      formik.setFieldError("Primary Image", undefined);
-    }
-  };
-
-  const handleDelete = () => {
-    formik.setFieldValue("Primary Image", null);
-  };
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const existingFiles = Array.isArray(formik.values["Gallery Images"]) ? formik.values["Gallery Images"] : [];
-      const totalFiles = existingFiles.length + files.length;
-      if (totalFiles > 30) {
-        formik.setFieldTouched("Gallery Images", true, false);
-        formik.setFieldError("Gallery Images", "Maximum 30 images allowed");
-        e.target.value = "";
-        return;
-      } else {
-        formik.setFieldValue("Gallery Images", [...existingFiles, ...Array.from(files)]);
-        formik.setFieldError("Gallery Images", undefined);
-      }
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const files = e.dataTransfer.files;
-    if (files && files[0]) {
-      const file = files[0];
-      if (file.size > 1 * 1024 * 1024) {
-        formik.setFieldTouched("Gallery Images", true, false);
-        formik.setFieldError("Gallery Images", "File must be 1MB or smaller");
-        return;
-      }
-      formik.setFieldValue("Gallery Images", file);
-      formik.setFieldError("Gallery Images", undefined);
-    }
-  };
-
-  const handleRemoveImage = (index: number) => {
-    const files = Array.isArray(formik.values["Gallery Images"])
-      ? [...formik.values["Gallery Images"]]
-      : [];
-    files.splice(index, 1);
-    formik.setFieldValue("Gallery Images", files);
-  };
-
-  const formik = useFormik<FormYachtsValues>({
-    initialValues: {
-      "Boat Type": "",
-      Title: "",
-      Category: "",
-      Capacity: "",
-      Length: "",
-      "Length Range": "",
-      Cabins: "",
-      Bathrooms: "",
-      "Passenger Day Trip": "",
-      "Passenger Overnight": "",
-      Guests: "",
-      "Guests Range": "",
-      "Day Trip Price": "",
-      "Overnight Price": "",
-      "Daytrip Price (Euro)": "",
-      // "Daytrip Price (THB)": "",
-      // "Daytrip Price (USD)": "",
-      "Primary Image": null as unknown as File,
-      "Gallery Images": [] as File[],
-      // Price: "",
-      // "Trip Details": "",
-      "Day Charter": "",
-      "Overnight Charter": "",
-      "About this Boat": "",
-      Specifications: "",
-      "Boat Layout": "",
-      "Video Link": "",
-      Badge: "",
-      Slug: "",
-      Design: "",
-      Built: "",
-      "Cruising Speed": "",
-      "Length Overall": "",
-      "Fuel Capacity": "",
-      "Water Capacity": "",
-      "Tags": [] as string[],
-      Code: "",
-      "Yacht Type": "",
-    },
-    validationSchema: yachtsvalidationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
-      try {
-        const errors = await formik.validateForm();
-        if (Object.keys(errors).length > 0) {
-          formik.setTouched({
-            "Boat Type": true,
-            Category: true,
-            Capacity: true,
-            Length: true,
-            "Length Range": true,
-            Title: true,
-            Cabins: true,
-            Bathrooms: true,
-            "Passenger Day Trip": true,
-            "Passenger Overnight": true,
-            Guests: true,
-            "Guests Range": true,
-            "Day Trip Price": true,
-            "Overnight Price": true,
-            "Daytrip Price (Euro)": true,
-            // "Daytrip Price (THB)": true,
-            // "Daytrip Price (USD)": true,
-            "Primary Image": {},
-            "Gallery Images": true,
-            // Price: true,
-            // "Trip Details": true,
-            "Day Charter": true,
-            "Overnight Charter": true,
-            "About this Boat": true,
-            Specifications: true,
-            "Boat Layout": true,
-            "Video Link": true,
-            // "Video Link 2": true,
-            // "Video Link 3": true,
-            Badge: true,
-            Slug: true,
-            Design: true,
-            Built: true,
-            "Cruising Speed": true,
-            "Length Overall": true,
-            "Fuel Capacity": true,
-            "Water Capacity": true,
-            Tags: true,
-            Code: true,
-            "Yacht Type": true,
-          });
-          setSubmitting(false);
-          return;
-        }
-        const result = await addYachtMutation.mutateAsync({
-          boatType: values["Boat Type"] ?? "",
-          price: values["Category"] ?? "",
-          capacity: values["Capacity"] ?? "",
-          length: values["Length"] ?? "",
-          lengthRange: values["Length Range"] ?? "",
-          title: values["Title"] ?? "",
-          cabins: values["Cabins"],
-          tags: (values["Tags"] ?? []).filter((t: string | undefined): t is string => typeof t === "string"),
-          bathrooms: values["Bathrooms"],
-          passengerDayTrip: values["Passenger Day Trip"],
-          passengerOvernight: values["Passenger Overnight"],
-          guests: values["Guests"],
-          guestsRange: values["Guests Range"],
-          dayTripPrice: values["Day Trip Price"],
-          overnightPrice: values["Overnight Price"],
-          daytripPriceEuro: values["Daytrip Price (Euro)"],
-          primaryImage: values["Primary Image"] as File,
-          galleryImages: values["Gallery Images"] as File[],
-          dayCharter: values["Day Charter"] ?? "",
-          overnightCharter: values["Overnight Charter"] ?? "",
-          aboutThisBoat: values["About this Boat"] ?? "",
-          specifications: values["Specifications"] ?? "",
-          boatLayout: values["Boat Layout"] ?? "",
-          videoLink: values["Video Link"] || undefined,
-          badge: values["Badge"] ?? "",
-          slug: values["Slug"] ?? "",
-          design: values["Design"] ?? "",
-          built: values["Built"] ?? "",
-          cruisingSpeed: values["Cruising Speed"] ?? "",
-          lengthOverall: values["Length Overall"] ?? "",
-          fuelCapacity: values["Fuel Capacity"] ?? "",
-          waterCapacity: values["Water Capacity"] ?? "",
-          code: values["Code"] ?? "",
-          type: values["Yacht Type"] ?? "",
-        });
-        toast.success("Yachts Register successfully", {
-          onClose: () => router.push("/yachts"),
-        });
-        formik.resetForm();
-      } catch (error) {
-        const err = error as { message?: string };
-        toast.error(err?.message || "An unexpected error occurred");
-      } finally {
-        setSubmitting(false);
-      }
-    },
+  const [form, setForm] = useState<CreateFormState>({
+    companyId: "",
+    regionId: "",
+    name: "",
+    type: "",
+    capacityGuests: "",
+    capacityCrew: "",
+    lengthM: "",
+    beamM: "",
+    yearBuilt: "",
+    engineType: "",
+    engineHp: "",
+    cruiseSpeedKnots: "",
+    fuelCapacityL: "",
+    homePort: "",
+    status: "available",
+    isActive: true,
   });
 
-  const getFieldError = (fieldName: keyof FormYachtsValues) => {
-    return formik.touched[fieldName] && formik.errors[fieldName];
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const loading = createYachtMutation.isPending;
+
+  const regionOptions = useMemo(() => regions ?? [], [regions]);
+  const companyOptions = useMemo(() => companies ?? [], [companies]);
+
+  const updateField = (field: keyof CreateFormState, value: string | boolean) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
   };
 
+  const parseIntOrUndefined = (value: string) => {
+    if (!value) return undefined;
+    const n = Number.parseInt(value, 10);
+    return Number.isFinite(n) ? n : undefined;
+  };
+
+  const parseFloatOrUndefined = (value: string) => {
+    if (!value) return undefined;
+    const n = Number.parseFloat(value);
+    return Number.isFinite(n) ? n : undefined;
+  };
+
+  const validate = () => {
+    const nextErrors: FormErrors = {};
+    if (!form.companyId) nextErrors.companyId = "Company is required";
+    if (!form.regionId) nextErrors.regionId = "Region is required";
+    if (!form.name.trim()) nextErrors.name = "Yacht name is required";
+    if (!form.type) nextErrors.type = "Yacht type is required";
+    const capacity = parseIntOrUndefined(form.capacityGuests);
+    if (!capacity || capacity <= 0) nextErrors.capacityGuests = "Guest capacity is required";
+    return nextErrors;
+  };
+
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextErrors = validate();
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
+      return;
+    }
+
+    try {
+      await createYachtMutation.mutateAsync({
+        companyId: form.companyId,
+        regionId: form.regionId,
+        name: form.name.trim(),
+        type: form.type,
+        capacityGuests: parseIntOrUndefined(form.capacityGuests) ?? 0,
+        capacityCrew: parseIntOrUndefined(form.capacityCrew),
+        lengthM: parseFloatOrUndefined(form.lengthM),
+        beamM: parseFloatOrUndefined(form.beamM),
+        yearBuilt: parseIntOrUndefined(form.yearBuilt),
+        engineType: form.engineType.trim() || undefined,
+        engineHp: parseIntOrUndefined(form.engineHp),
+        cruiseSpeedKnots: parseFloatOrUndefined(form.cruiseSpeedKnots),
+        fuelCapacityL: parseIntOrUndefined(form.fuelCapacityL),
+        homePort: form.homePort.trim() || undefined,
+        status: form.status,
+        isActive: form.isActive,
+      });
+      toast.success("Yacht created successfully", {
+        onClose: () => router.push("/yachts"),
+      });
+      setForm({
+        companyId: "",
+        regionId: "",
+        name: "",
+        type: "",
+        capacityGuests: "",
+        capacityCrew: "",
+        lengthM: "",
+        beamM: "",
+        yearBuilt: "",
+        engineType: "",
+        engineHp: "",
+        cruiseSpeedKnots: "",
+        fuelCapacityL: "",
+        homePort: "",
+        status: "available",
+        isActive: true,
+      });
+    } catch (error) {
+      const err = error as { message?: string };
+      toast.error(err?.message || "Failed to create yacht");
+    }
+  };
+
+  const inputClass =
+    "w-full px-4 py-3 rounded-lg border text-sm focus:outline-none focus:ring-2";
+
   return (
-    <>
-      <form onSubmit={formik.handleSubmit}>
-        {NewYachtsData.map((section, sectionIndex) => {
-          return (
-            <div key={sectionIndex}>
-              {section.section && (
-                <h2
-                  className={`font-bold mb-2 ${sectionIndex === 0 ? "" : "mt-4"
-                    } ${sectionIndex !== 1
-                      ? "text-[#001B48] text-[24px] pb-2 border-b border-[#CCCCCC]"
-                      : "text-[#222222]"
-                    }`}
+    <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
+      <div className="pt-[72px] p-4 md:p-6 lg:p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold" style={{ color: colors.textPrimary }}>
+              Add Yacht
+            </h1>
+            <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+              Capture core yacht details to match the new backend model.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push("/yachts")}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all"
+            style={{
+              backgroundColor: colors.background,
+              borderColor: colors.cardBorder,
+              color: colors.textPrimary,
+            }}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back to Fleet
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-6">
+          <div
+            className="rounded-xl border p-6"
+            style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder }}
+          >
+            <h2 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+              Basic Details
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Yacht Name *
+                </label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => updateField("name", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: errors.name ? colors.danger : colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+                {errors.name && (
+                  <p className="text-xs mt-2" style={{ color: colors.danger }}>
+                    {errors.name}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Yacht Type *
+                </label>
+                <select
+                  value={form.type}
+                  onChange={(e) => updateField("type", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: errors.type ? colors.danger : colors.cardBorder,
+                    color: form.type ? colors.textPrimary : colors.textSecondary,
+                  }}
                 >
-                  {section.section}
-                </h2>
-              )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-4 gap-4">
-                {section.fields.map((field, index) => {
-                  const value =
-                    formik.values[field.label as keyof typeof formik.values] ??
-                    "";
-                  const isDropdown = field.type === "dropdown";
-                  const isNumber = ["Length", "Cabins", "Bathrooms", "Passenger Day Trip", "Passenger Overnight", "Guests", "Day Trip Price", "Overnight Price", "Daytrip Price (Euro)", "Built", "Cruising Speed", "Length Overall", "Fuel Capacity", "Water Capacity"].includes(field.label);
-                  const isPrimaryUpload = field.label === "Primary Image";
-                  const isFileUpload = field.label === "Gallery Images";
-                  const isCheckbox = field.type === "checkbox";
-                  const isTag = field.label === "Tags";
-                  const fieldName = field.label as keyof FormYachtsValues;
-                  const fieldError = getFieldError(fieldName);
-                  if (isCheckbox) {
-                    return (
-                      <div
-                        key={index}
-                        className="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2 xl:col-span-4"
-                      >
-                        <label className="flex items-center gap-2 w-fit">
-                          <input
-                            type="radio"
-                            name="Length Range"
-                            value={field.label}
-                            checked={
-                              formik.values["Length Range"] === field.label
-                            }
-                            onChange={(e) => {
-                              formik.setFieldValue(
-                                "Length Range",
-                                e.target.value
-                              );
-                              formik.setFieldTouched(
-                                "Length Range",
-                                true,
-                                false
-                              );
-                            }}
-                            onBlur={formik.handleBlur}
-                            className="peer hidden"
-                          />
-                          <div className="w-4 h-4 cursor-pointer rounded-full border border-[#828282] bg-white flex items-center justify-center peer-checked:border-[#001B48] peer-checked:bg-[#001B48]">
-                            {formik.values["Length Range"] === field.label && (
-                              <div className="w-2 h-2 rounded-full bg-white"></div>
-                            )}
-                          </div>
-                          <label className="block font-semibold text-[#222222] cursor-pointer">
-                            {field.label}
-                          </label>
-                        </label>
-                        {index ===
-                          section.fields.filter((f) => f.type === "checkbox")
-                            .length -
-                          1 &&
-                          getFieldError(
-                            "Length Range" as keyof FormYachtsValues
-                          ) && (
-                            <p className="text-[#DB2828] text-sm mt-1">
-                              {typeof formik.errors["Length Range"] ===
-                                "string" && formik.errors["Length Range"]}
-                            </p>
-                          )}
-                      </div>
-                    );
-                  }
-                  return (
-                    <div
-                      key={index}
-                      className={`${isFileUpload
-                        ? "col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2 xl:col-span-4"
-                        : ""
-                        }`}
-                    >
-                      <div className="flex items-center gap-1 mb-2">
-                        <label className="block font-bold text-[#222222]">
-                          {field.label}
-                        </label>
-                        {field.required && (
-                          <span className="text-red-500">*</span>
-                        )}
-                      </div>
-                      {isTag ? (
-                        <>
-                          <div
-                            className={`bg-[#F0F2F4] rounded-lg px-3 py-2 w-full ${fieldError ? "border border-[#DB2828]" : ""
-                              }`}
-                          >
-                            <div className="relative tags-dropdown">
-                              <button
-                                type="button"
-                                onClick={() => setIsTagsOpen(!isTagsOpen)}
-                                className="w-full rounded-md cursor-pointer flex items-center justify-between"
-                              >
-                                <span className={Array.isArray(formik.values[fieldName]) && formik.values[fieldName].length > 0 ? "text-[#222222]" : "text-[#999999]"}>
-                                  {Array.isArray(formik.values[fieldName]) && formik.values[fieldName].length > 0 
-                                    ? `${formik.values[fieldName].length} tags selected`
-                                    : "Select tags"
-                                  }
-                                </span>
-                                <RiArrowDownSLine className={`transition-transform text-[#999999] ${isTagsOpen ? 'rotate-180' : ''}`} />
-                              </button>
-                              {isTagsOpen && (
-                                <div className="absolute top-full left-0 scrollbar-thick right-0 z-10 mt-1 max-h-[200px] overflow-y-auto border hover:text-white border-gray-300 rounded-md bg-white shadow-lg">
-                                  {allTags && allTags.length > 0 ? (
-                                    allTags.map((tag) => (
-                                      <label
-                                        key={tag._id}
-                                        onClick={() => {
-                                          const currentValues = Array.isArray(formik.values[fieldName]) ? formik.values[fieldName] : [];
-                                          const isSelected = currentValues.includes(tag.Name);
-                                          let newValues;
-                                          if (isSelected) {
-                                            newValues = currentValues.filter(value => value !== tag.Name);
-                                          } else {
-                                            newValues = [...currentValues, tag.Name];
-                                          }
-                                          formik.setFieldValue(fieldName, newValues);
-                                          formik.setFieldTouched(fieldName, true, false);
-                                        }}
-                                        className={`flex items-center justify-between px-3 py-2 cursor-pointer hover:text-white hover:bg-[#1967D2] ${
-                                          Array.isArray(formik.values[fieldName]) && formik.values[fieldName].includes(tag.Name)
-                                            ? "bg-blue-50"
-                                            : ""
-                                        }`}
-                                      >
-                                        <span className="text-sm text-[#222222] hover:text-white">{tag.Name}</span>
-                                        {Array.isArray(formik.values[fieldName]) && formik.values[fieldName].includes(tag.Name) && (
-                                          <span className="text-[#222222]">
-                                            <Tick />
-                                          </span>
-                                        )}
-                                      </label>
-                                    ))
-                                  ) : (
-                                    <div className="px-3 py-2 text-[#999999] text-sm">
-                                      No Tags Available
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              <input
-                                type="hidden"
-                                name={fieldName}
-                                value={Array.isArray(formik.values[fieldName]) ? formik.values[fieldName].join(",") : ""}
-                              />
-                            </div>
-                          </div>
-                          {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
-                              {typeof formik.errors[fieldName] === "string" &&
-                                formik.errors[fieldName]}
-                            </p>
-                          )}
-                        </>
-                      ) : isDropdown ? (
-                        <>
-                          <div
-                            className={`bg-[#F0F2F4] rounded-lg px-3 py-2 w-full ${fieldError ? "border border-[#DB2828]" : ""
-                              }`}
-                          >
-                            <select
-                              name={fieldName}
-                              value={formik.values[fieldName] as string}
-                              onChange={(e) => {
-                                formik.handleChange(e);
-                                formik.setFieldTouched(fieldName, true, false);
-                              }}
-                              onBlur={formik.handleBlur}
-                              className={`w-full outline-0 cursor-pointer ${value ? "text-[#222222]" : "text-[#999999]"
-                                }`}
-                            >
-                              <option value="" disabled hidden>
-                                {field.placeholder}
-                              </option>
-                              {field.options?.map((option) => (
-                                <option
-                                  key={option}
-                                  value={option}
-                                  className="text-[#222222] outline-0 pt-4"
-                                >
-                                  {option}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
-                              {typeof formik.errors[fieldName] === "string" &&
-                                formik.errors[fieldName]}
-                            </p>
-                          )}
-                        </>
-                      ) : isPrimaryUpload ? (
-                        <>
-                          <div
-                            className={`text-[#222222] w-full bg-[#F0F2F4] rounded-lg px-3 py-2  ${fieldError ? "border border-[#DB2828]" : ""
-                              }`}
-                          >
-                            {!formik.values["Primary Image"] ? (
-                              <input
-                                type="file"
-                                name="Primary Image"
-                                accept="image/*"
-                                onChange={handleImageChange}
-                                className="cursor-pointer w-full"
-                              />
-                            ) : (
-                              <>
-                                <div className="flex items-center justify-between">
-                                  <p className="text-[#222222] font-medium">
-                                    {(() => {
-                                      const file = formik.values[
-                                        "Primary Image"
-                                      ] as File;
-                                      if (!file) return "No file selected";
-                                      const name = file.name;
-                                      const extMatch = name.match(/\.[^/.]+$/);
-                                      const ext = extMatch ? extMatch[0] : "";
-                                      const firstWord = name
-                                        .replace(/\.[^/.]+$/, "")
-                                        .split(/[ .]/)[0]
-                                        .slice(0, 5);
-                                      return `${firstWord}${ext}`;
-                                    })()}
-                                  </p>
-                                  <MdDeleteOutline
-                                    className="cursor-pointer text-red-500"
-                                    onClick={handleDelete}
-                                  />
-                                </div>
-                              </>
-                            )}
-                          </div>
-                          {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
-                              {typeof formik.errors[fieldName] === "string" &&
-                                formik.errors[fieldName]}
-                            </p>
-                          )}
-                        </>
-                      ) : isFileUpload ? (
-                        <>
-                          <div
-                            className={`border border-dashed border-[#C4C4C4] bg-white rounded-md py-12 px-4 text-center w-full  ${fieldError ? "border border-[#DB2828]" : ""
-                              }`}
-                          >
-                            <div
-                              onDrop={handleDrop}
-                              onDragOver={(e) => e.preventDefault()}
-                              onBlur={() =>
-                                formik.setFieldTouched(
-                                  "Gallery Images",
-                                  true,
-                                  false
-                                )
-                              }
-                              className="text-[#B3B3B3] font-normal text-[14px] flex flex-col items-center cursor-pointer"
-                            >
-                              <input
-                                type="file"
-                                name="Gallery Images"
-                                accept="image/png, image/jpeg"
-                                multiple
-                                onChange={handleFileUpload}
-                                onBlur={() =>
-                                  formik.setFieldTouched(
-                                    "Gallery Images",
-                                    true,
-                                    false
-                                  )
-                                }
-                                className="hidden"
-                                id="generalinfo-upload"
-                              />
-                              <label
-                                htmlFor="generalinfo-upload"
-                                className="cursor-pointer block"
-                                onClick={() =>
-                                  formik.setFieldTouched(
-                                    "Gallery Images",
-                                    true,
-                                    false
-                                  )
-                                }
-                              >
-                                <div className="flex items-center gap-1">
-                                  <Image
-                                    src="/images/Inventory/file_upload.svg"
-                                    alt="upload"
-                                    width={20}
-                                    height={20}
-                                  />
-                                  <p>
-                                    Drop file to attach or{" "}
-                                    <span className="text-[#0080A7] underline">
-                                      browser
-                                    </span>
-                                  </p>
-                                </div>
-                                <p>JPEG, PNG (Max size 10MB)</p>
-                              </label>
-                              {Array.isArray(formik.values["Gallery Images"]) &&
-                                formik.values["Gallery Images"].length > 0 && (
-                                  <div className="mt-4 grid grid-cols-3 gap-4">
-                                    {formik.values["Gallery Images"].map(
-                                      (
-                                        file: File | undefined,
-                                        index: number
-                                      ) => {
-                                        if (!file) return null;
-                                        return (
-                                          <div
-                                            key={index}
-                                            className="relative w-[100px] h-[100px]"
-                                          >
-                                            <Image
-                                              src={URL.createObjectURL(file)}
-                                              alt={`upload-${index}`}
-                                              width={100}
-                                              height={100}
-                                              className="w-[100px] h-[100px] object-cover rounded-lg"
-                                            />
-                                            <button
-                                              type="button"
-                                              onClick={() =>
-                                                handleRemoveImage(index)
-                                              }
-                                              className="absolute top-1 right-1 border border-[#CCCCCC] cursor-pointer rounded-md p-1 shadow-lg"
-                                            >
-                                              <MdDeleteOutline className="text-[#DB2828] hover:text-[#0080A7] text-md" />
-                                            </button>
-                                          </div>
-                                        );
-                                      }
-                                    )}
-                                  </div>
-                                )}
-                            </div>
-                          </div>
-                          {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
-                              {typeof formik.errors[fieldName] === "string" &&
-                                formik.errors[fieldName]}
-                            </p>
-                          )}
-                        </>
-                      ) : isNumber ? (
-                        <>
-                          <input
-                            type="number"
-                            name={fieldName}
-                            placeholder={field.placeholder}
-                            value={
-                              typeof formik.values[fieldName] === "string" || typeof formik.values[fieldName] === "number"
-                                ? formik.values[fieldName]
-                                : ""
-                            }
-                            onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.setFieldTouched(fieldName, true, false);
-                            }}
-                            onBlur={formik.handleBlur}
-                            className={`placeholder:text-[#999999] outline-none text-[#222222] w-full bg-[#F0F2F4] rounded-lg px-3 py-2  ${fieldError ? "border border-[#DB2828]" : ""
-                              }`}
-                            onWheel={e => e.currentTarget.blur()}
-                            onKeyDown={e => {
-                              if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                                e.preventDefault();
-                              }
-                            }}
-                          />
-                          {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
-                              {typeof formik.errors[fieldName] === "string" &&
-                                formik.errors[fieldName]}
-                            </p>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <input
-                            type="text"
-                            name={fieldName}
-                            placeholder={field.placeholder}
-                            value={formik.values[fieldName] as string}
-                            onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.setFieldTouched(fieldName, true, false);
-                            }}
-                            onBlur={formik.handleBlur}
-                            className={`placeholder:text-[#999999] outline-none text-[#222222] w-full bg-[#F0F2F4] rounded-lg px-3 py-2  ${fieldError ? "border border-[#DB2828]" : ""
-                              }`}
-                          />
-                          {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
-                              {typeof formik.errors[fieldName] === "string" &&
-                                formik.errors[fieldName]}
-                            </p>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
+                  <option value="" disabled>
+                    Select yacht type
+                  </option>
+                  {TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.type && (
+                  <p className="text-xs mt-2" style={{ color: colors.danger }}>
+                    {errors.type}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Charter Company *
+                </label>
+                <select
+                  value={form.companyId}
+                  onChange={(e) => updateField("companyId", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: errors.companyId ? colors.danger : colors.cardBorder,
+                    color: form.companyId ? colors.textPrimary : colors.textSecondary,
+                  }}
+                  disabled={companiesLoading}
+                >
+                  <option value="" disabled>
+                    {companiesLoading ? "Loading companies..." : "Select charter company"}
+                  </option>
+                  {companyOptions.map((company) => (
+                    <option key={company.id} value={company.id}>
+                      {company.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.companyId && (
+                  <p className="text-xs mt-2" style={{ color: colors.danger }}>
+                    {errors.companyId}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Region *
+                </label>
+                <select
+                  value={form.regionId}
+                  onChange={(e) => updateField("regionId", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: errors.regionId ? colors.danger : colors.cardBorder,
+                    color: form.regionId ? colors.textPrimary : colors.textSecondary,
+                  }}
+                  disabled={regionsLoading}
+                >
+                  <option value="" disabled>
+                    {regionsLoading ? "Loading regions..." : "Select region"}
+                  </option>
+                  {regionOptions.map((region) => (
+                    <option key={region.id} value={region.id}>
+                      {region.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.regionId && (
+                  <p className="text-xs mt-2" style={{ color: colors.danger }}>
+                    {errors.regionId}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Guest Capacity *
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  value={form.capacityGuests}
+                  onChange={(e) => updateField("capacityGuests", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: errors.capacityGuests ? colors.danger : colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+                {errors.capacityGuests && (
+                  <p className="text-xs mt-2" style={{ color: colors.danger }}>
+                    {errors.capacityGuests}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Crew Capacity
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.capacityCrew}
+                  onChange={(e) => updateField("capacityCrew", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Status
+                </label>
+                <select
+                  value={form.status}
+                  onChange={(e) => updateField("status", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                >
+                  {STATUS_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-3 pt-6">
+                <label className="text-sm font-medium" style={{ color: colors.textPrimary }}>
+                  Active
+                </label>
+                <button
+                  type="button"
+                  onClick={() => updateField("isActive", !form.isActive)}
+                  className="relative w-12 h-6 rounded-full transition-all"
+                  style={{
+                    backgroundColor: form.isActive ? colors.accent : colors.cardBorder,
+                  }}
+                  aria-pressed={form.isActive}
+                >
+                  <span
+                    className="absolute top-0.5 w-5 h-5 rounded-full transition-all"
+                    style={{
+                      backgroundColor: colors.background,
+                      left: form.isActive ? "1.375rem" : "0.25rem",
+                    }}
+                  />
+                </button>
               </div>
             </div>
-          );
-        })}
-        {RichTextEditorSections.map((section) => {
-          return (
-            <div key={section.id} className="mt-4 grid lg:grid-cols-2 gap-2">
-              <p className="font-bold text-[#222222]">{section.label}</p>
-              <div className="w-full">
-                <RichTextEditor
-                  value={formik.values[section.label as RichTextFieldKey] ?? ""}
-                  onChange={(html) => formik.setFieldValue(section.label, html)}
+          </div>
+
+          <div
+            className="rounded-xl border p-6"
+            style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder }}
+          >
+            <h2 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
+              Dimensions & Performance
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Length (m)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.lengthM}
+                  onChange={(e) => updateField("lengthM", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Beam (m)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.beamM}
+                  onChange={(e) => updateField("beamM", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Year Built
+                </label>
+                <input
+                  type="number"
+                  min={1900}
+                  value={form.yearBuilt}
+                  onChange={(e) => updateField("yearBuilt", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Engine Type
+                </label>
+                <input
+                  type="text"
+                  value={form.engineType}
+                  onChange={(e) => updateField("engineType", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Engine HP
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.engineHp}
+                  onChange={(e) => updateField("engineHp", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Cruise Speed (knots)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.cruiseSpeedKnots}
+                  onChange={(e) => updateField("cruiseSpeedKnots", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Fuel Capacity (L)
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  value={form.fuelCapacityL}
+                  onChange={(e) => updateField("fuelCapacityL", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Home Port
+                </label>
+                <input
+                  type="text"
+                  value={form.homePort}
+                  onChange={(e) => updateField("homePort", e.target.value)}
+                  className={inputClass}
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
                 />
               </div>
             </div>
-          );
-        })}
-        <div className="mt-6 flex items-center justify-between">
-          <button type="button" onClick={() => router.push("/yachts")} className="rounded-full px-[16px] py-[7px] border border-[#666666] text-[#222222] flex items-center gap-1 justify-center cursor-pointer font-medium">
-            <MdKeyboardArrowLeft />
-            Back
-          </button>
-          <button
-            type="submit"
-            disabled={loading}
-            className={`rounded-full px-[16px] py-[8px] bg-[#001B48] hover:bg-[#222222] text-white flex items-center justify-center gap-2 font-medium ${loading ? "cursor-not-allowed" : "cursor-pointer"
-              }`}
-          >
-            {loading ? "Save ..." : <><Tick /> Save</>}
-          </button>
-        </div>
-      </form>
+          </div>
+
+          {(regionsLoading || companiesLoading) && (
+            <div className="flex justify-center py-2">
+              <LoadingSpinner size="sm" text="Loading reference data..." />
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => router.push("/yachts")}
+              className="px-4 py-2 rounded-lg border text-sm font-medium transition-all"
+              style={{
+                backgroundColor: colors.background,
+                borderColor: colors.cardBorder,
+                color: colors.textPrimary,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all"
+              style={{
+                background: `linear-gradient(to right, ${colors.accent}, #00B39F)`,
+                opacity: loading ? 0.7 : 1,
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              {loading ? "Saving..." : "Create Yacht"}
+            </button>
+          </div>
+        </form>
+      </div>
       <ToastContainer position="top-right" autoClose={3000} />
-    </>
+    </div>
   );
 };
 

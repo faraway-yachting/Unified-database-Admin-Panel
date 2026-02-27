@@ -9,10 +9,10 @@ export interface Booking {
   yacht: string;
   package: string;
   region: string;
-  checkIn: string;
-  checkOut: string;
-  extras: string;
+  startDate: string;
+  endDate: string;
   totalAmount: number;
+  currency: string;
   status: "confirmed" | "inquiry" | "paid" | "completed" | "cancelled";
 }
 
@@ -20,14 +20,14 @@ interface BookingsTableProps {
   bookings: Booking[];
   onView: (booking: Booking) => void;
   onEdit: (booking: Booking) => void;
-  onCancel: (booking: Booking) => void;
+  onDelete: (booking: Booking) => void;
 }
 
 export function BookingsTable({
   bookings,
   onView,
   onEdit,
-  onCancel,
+  onDelete,
 }: BookingsTableProps) {
   const { colors } = useTheme();
 
@@ -87,7 +87,7 @@ export function BookingsTable({
                     className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
                     style={{ color: colors.textSecondary }}
                   >
-                    Booking ID
+                    ID
                   </th>
                   <th
                     className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
@@ -117,19 +117,13 @@ export function BookingsTable({
                     className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
                     style={{ color: colors.textSecondary }}
                   >
-                    Check-in
+                    Start Date
                   </th>
                   <th
                     className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
                     style={{ color: colors.textSecondary }}
                   >
-                    Check-out
-                  </th>
-                  <th
-                    className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Extras
+                    End Date
                   </th>
                   <th
                     className="text-right text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
@@ -225,7 +219,7 @@ export function BookingsTable({
                           className="text-xs md:text-sm font-mono whitespace-nowrap"
                           style={{ color: colors.textPrimary }}
                         >
-                          {booking.checkIn}
+                          {booking.startDate}
                         </div>
                       </td>
                       <td className="py-3 md:py-4 px-2">
@@ -233,15 +227,7 @@ export function BookingsTable({
                           className="text-xs md:text-sm font-mono whitespace-nowrap"
                           style={{ color: colors.textPrimary }}
                         >
-                          {booking.checkOut}
-                        </div>
-                      </td>
-                      <td className="py-3 md:py-4 px-2">
-                        <div
-                          className="text-xs md:text-sm whitespace-nowrap"
-                          style={{ color: colors.textSecondary }}
-                        >
-                          {booking.extras}
+                          {booking.endDate}
                         </div>
                       </td>
                       <td className="py-3 md:py-4 px-2 text-right">
@@ -252,7 +238,7 @@ export function BookingsTable({
                             textDecoration: isCancelled ? "line-through" : "none",
                           }}
                         >
-                          ${booking.totalAmount.toLocaleString()}
+                          {booking.currency} {booking.totalAmount.toLocaleString()}
                         </div>
                       </td>
                       <td className="py-3 md:py-4 px-2">
@@ -314,7 +300,7 @@ export function BookingsTable({
                               </button>
                               <button
                                 type="button"
-                                onClick={() => onCancel(booking)}
+                                onClick={() => onDelete(booking)}
                                 className="p-1 md:p-1.5 rounded-lg transition-all"
                                 style={{
                                   backgroundColor: colors.background,
@@ -328,7 +314,7 @@ export function BookingsTable({
                                   e.currentTarget.style.backgroundColor = colors.background;
                                   e.currentTarget.style.color = colors.textSecondary;
                                 }}
-                                title="Cancel"
+                            title="Delete"
                               >
                                 <XCircle className="w-3 h-3 md:w-4 md:h-4" />
                               </button>

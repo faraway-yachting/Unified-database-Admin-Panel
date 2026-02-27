@@ -27,6 +27,94 @@ export interface YachtListItemImage {
   sortOrder: number;
 }
 
+export interface YachtDetailImage {
+  id: string;
+  imageUrl: string;
+  caption: string | null;
+  isCover: boolean;
+  sortOrder: number;
+}
+
+export interface YachtDetailAmenity {
+  id: string;
+  category: string;
+  name: string;
+  isAvailable: boolean;
+}
+
+export interface YachtDetailDocument {
+  id: string;
+  documentType: string;
+  documentUrl: string;
+  issuedDate: string | null;
+  expiryDate: string | null;
+  isExpired: boolean;
+  notes: string | null;
+}
+
+export interface YachtDetailBooking {
+  id: string;
+  bookingRef: string;
+  startDate: string;
+  endDate: string;
+  guestCount: number;
+  status: string;
+  totalAmount: number | string;
+  currencyCode: string;
+}
+
+export interface YachtDetailAvailabilityBlock {
+  id: string;
+  startDate: string;
+  endDate: string;
+  reason: string | null;
+  notes: string | null;
+}
+
+export interface AddAmenityPayload {
+  category: string;
+  name: string;
+  isAvailable?: boolean;
+}
+
+export interface AddDocumentPayload {
+  file: File;
+  documentType: string;
+  issuedDate?: string;
+  expiryDate?: string;
+  notes?: string;
+}
+
+export interface AddAvailabilityBlockPayload {
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  notes?: string;
+}
+
+export interface YachtDetail {
+  id: string;
+  name: string;
+  type: string;
+  lengthM: number | string | null;
+  beamM: number | string | null;
+  capacityGuests: number;
+  capacityCrew: number | null;
+  yearBuilt: number | null;
+  engineType: string | null;
+  engineHp: number | null;
+  cruiseSpeedKnots: number | string | null;
+  fuelCapacityL: number | null;
+  homePort: string | null;
+  status: string;
+  region?: YachtListItemRegion;
+  images?: YachtDetailImage[];
+  amenities?: YachtDetailAmenity[];
+  documents?: YachtDetailDocument[];
+  bookings?: YachtDetailBooking[];
+  availabilityBlocks?: YachtDetailAvailabilityBlock[];
+}
+
 export interface YachtListItem {
   id: string;
   name: string;
@@ -102,6 +190,25 @@ export interface AddYachtsPayload {
   type: string;
   primaryImage: File;
   galleryImages: (File | string)[];
+}
+
+export interface CreateYachtPayload {
+  companyId: string;
+  name: string;
+  type: string;
+  capacityGuests: number;
+  regionId: string;
+  lengthM?: number | null;
+  beamM?: number | null;
+  capacityCrew?: number | null;
+  yearBuilt?: number | null;
+  engineType?: string | null;
+  engineHp?: number | null;
+  cruiseSpeedKnots?: number | null;
+  fuelCapacityL?: number | null;
+  homePort?: string | null;
+  status?: string;
+  isActive?: boolean;
 }
 
 /** @deprecated Use YachtListItem for list. */
@@ -220,9 +327,28 @@ async function getYachtByIdApi(yachtId: string): Promise<{ yachts: YachtListItem
   return { yachts: raw };
 }
 
+async function getYachtDetailApi(yachtId: string): Promise<{ yacht: YachtDetail }> {
+  const { data } = await apiClient.get(config.api.yachts.detail(yachtId));
+  if (data?.error) {
+    throw new Error(data?.error?.message || "Something went wrong");
+  }
+  const raw = data as YachtDetail;
+  return { yacht: raw };
+}
+
 async function addYachtApi(payload: AddYachtsPayload) {
   const { data } = await apiClient.post(config.api.yachts.create, payload, {
     headers: { "Content-Type": "multipart/form-data" },
+  });
+  if (data?.error) {
+    throw new Error(data?.error?.message || "Something went wrong");
+  }
+  return data;
+}
+
+async function createYachtApi(payload: CreateYachtPayload) {
+  const { data } = await apiClient.post(config.api.yachts.create, payload, {
+    headers: { "Content-Type": "application/json" },
   });
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
@@ -290,10 +416,28 @@ export function useYachtByIdQuery(yachtId: string | null) {
   });
 }
 
+export function useYachtDetailQuery(yachtId: string | null) {
+  return useQuery({
+    queryKey: [...yachtsKeys.detail(yachtId ?? ""), "detail"],
+    queryFn: () => getYachtDetailApi(yachtId!),
+    enabled: !!yachtId,
+  });
+}
+
 export function useAddYachtMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: addYachtApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: yachtsKeys.lists() });
+    },
+  });
+}
+
+export function useCreateYachtMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: createYachtApi,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: yachtsKeys.lists() });
     },
@@ -334,6 +478,82 @@ export function usePublishYachtMutation() {
       });
     },
   });
+}
+
+export async function uploadYachtImages(yachtId: string, files: File[]) {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("images", file));
+  const { data } = await apiClient.post(config.api.yachts.uploadImages(yachtId), formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  if (data?.error) {
+    throw new Error(data?.error?.message || "Something went wrong");
+  }
+  return data;
+}
+
+export async function deleteYachtImage(yachtId: string, imageId: string) {
+  const { data } = await apiClient.delete(config.api.yachts.image(yachtId, imageId));
+  if (data?.error) {
+    throw new Error(data?.error?.message || "Something went wrong");
+  }
+  return data;
+}
+
+export async function addYachtAmenity(yachtId: string, payload: AddAmenityPayload) {
+  const { data } = await apiClient.post(config.api.yachts.addAmenity(yachtId), payload);
+  if (data?.error) {
+    throw new Error(data?.error?.message || "Something went wrong");
+  }
+  return data;
+}
+
+export async function deleteYachtAmenity(yachtId: string, amenityId: string) {
+  const { data } = await apiClient.delete(config.api.yachts.amenity(yachtId, amenityId));
+  if (data?.error) {
+    throw new Error(data?.error?.message || "Something went wrong");
+  }
+  return data;
+}
+
+export async function uploadYachtDocument(yachtId: string, payload: AddDocumentPayload) {
+  const formData = new FormData();
+  formData.append("file", payload.file);
+  formData.append("documentType", payload.documentType);
+  if (payload.issuedDate) formData.append("issuedDate", payload.issuedDate);
+  if (payload.expiryDate) formData.append("expiryDate", payload.expiryDate);
+  if (payload.notes) formData.append("notes", payload.notes);
+  const { data } = await apiClient.post(config.api.yachts.uploadDocument(yachtId), formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  if (data?.error) {
+    throw new Error(data?.error?.message || "Something went wrong");
+  }
+  return data;
+}
+
+export async function deleteYachtDocument(yachtId: string, docId: string) {
+  const { data } = await apiClient.delete(config.api.yachts.document(yachtId, docId));
+  if (data?.error) {
+    throw new Error(data?.error?.message || "Something went wrong");
+  }
+  return data;
+}
+
+export async function addYachtAvailabilityBlock(yachtId: string, payload: AddAvailabilityBlockPayload) {
+  const { data } = await apiClient.post(config.api.yachts.availabilityBlock(yachtId), payload);
+  if (data?.error) {
+    throw new Error(data?.error?.message || "Something went wrong");
+  }
+  return data;
+}
+
+export async function deleteYachtAvailabilityBlock(yachtId: string, blockId: string) {
+  const { data } = await apiClient.delete(config.api.yachts.removeBlock(yachtId, blockId));
+  if (data?.error) {
+    throw new Error(data?.error?.message || "Something went wrong");
+  }
+  return data;
 }
 
 /** Map backend type to display label (sailboat | motor | catamaran | gulet). */

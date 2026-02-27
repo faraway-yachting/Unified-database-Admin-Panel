@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import {
   X,
@@ -12,7 +12,9 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
+import { parseLength, useYachtDetailQuery } from "@/lib/api/yachts";
 import type { Yacht } from "./YachtCard";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 interface YachtDetailDrawerProps {
   yacht: Yacht | null;
@@ -21,53 +23,83 @@ interface YachtDetailDrawerProps {
 
 export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
   const { colors } = useTheme();
+  const [activeIndex, setActiveIndex] = useState(0);
+  const { data, isLoading, isError, error } = useYachtDetailQuery(yacht?.id ?? null);
+  const detail = data?.yacht;
+
+  const images = useMemo(() => {
+    if (!yacht) return [];
+    const detailImages = detail?.images?.map((img) => img.imageUrl).filter(Boolean) ?? [];
+    const list =
+      detailImages.length > 0
+        ? detailImages
+        : yacht.images?.length
+          ? yacht.images
+          : [yacht.image];
+    return list.filter(Boolean);
+  }, [detail?.images, yacht]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft") {
+        setActiveIndex((idx) => (images.length ? (idx - 1 + images.length) % images.length : 0));
+      }
+      if (e.key === "ArrowRight") {
+        setActiveIndex((idx) => (images.length ? (idx + 1) % images.length : 0));
+      }
     };
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [onClose]);
+  }, [onClose, images.length]);
+
+  useEffect(() => {
+    if (yacht?.id) setActiveIndex(0);
+  }, [yacht?.id]);
 
   if (!yacht) return null;
 
-  const images = [yacht.image, yacht.image, yacht.image, yacht.image];
+  const hasMultipleImages = images.length > 1;
+  const activeImage = images[activeIndex] || yacht.image;
+
+  const lengthM = parseLength(detail?.lengthM ?? null);
+  const lengthFt = lengthM ? Math.round(lengthM * 3.28084) : 0;
+  const displayLengthFt = lengthFt || yacht.length || 0;
+  const beamM = detail?.beamM != null ? parseFloat(String(detail.beamM)) : null;
+  const cruiseSpeed = detail?.cruiseSpeedKnots != null ? parseFloat(String(detail.cruiseSpeedKnots)) : null;
+  const fuelCapacity = detail?.fuelCapacityL ?? null;
 
   const specs = [
-    { label: "Length Overall", value: `${yacht.length} ft` },
-    { label: "Beam", value: "24 ft" },
-    { label: "Draft", value: "8.5 ft" },
-    { label: "Max Speed", value: "18 knots" },
-    { label: "Cruising Speed", value: "14 knots" },
-    { label: "Fuel Capacity", value: "2,800 L" },
-    { label: "Water Capacity", value: "1,200 L" },
-    { label: "Engine", value: "2x Volvo Penta D6" },
+    { label: "Length Overall", value: displayLengthFt ? `${displayLengthFt} ft` : "—" },
+    { label: "Beam", value: beamM != null && Number.isFinite(beamM) ? `${beamM} m` : "—" },
+    { label: "Cruising Speed", value: cruiseSpeed != null && Number.isFinite(cruiseSpeed) ? `${cruiseSpeed} knots` : "—" },
+    { label: "Fuel Capacity", value: fuelCapacity ? `${fuelCapacity} L` : "—" },
+    { label: "Engine", value: detail?.engineType || "—" },
+    { label: "Engine HP", value: detail?.engineHp ? `${detail.engineHp} hp` : "—" },
+    { label: "Year Built", value: detail?.yearBuilt ? String(detail.yearBuilt) : "—" },
+    { label: "Home Port", value: detail?.homePort || "—" },
   ];
 
-  const amenities = [
-    "Air Conditioning",
-    "WiFi",
-    "Water Sports Equipment",
-    "Tender & Toys",
-    "BBQ Grill",
-    "Swimming Platform",
-    "Sun Deck",
-    "Entertainment System",
-    "Full Kitchen",
-  ];
+  const amenities = (detail?.amenities ?? []).filter((amenity) => amenity.isAvailable);
 
-  const documents = [
-    { name: "Insurance Certificate", expiry: "Dec 15, 2026", status: "valid" as const },
-    { name: "Safety Certificate", expiry: "Aug 22, 2026", status: "valid" as const },
-    { name: "Registration", expiry: "Jan 30, 2025", status: "expiring" as const },
-  ];
+  const documents = detail?.documents ?? [];
 
-  const upcomingBookings = [
-    { id: "BK-2847", guest: "Michael Chen", dates: "Feb 22 - Feb 28", amount: 24500 },
-    { id: "BK-2901", guest: "Sarah Williams", dates: "Mar 5 - Mar 12", amount: 32800 },
-    { id: "BK-2954", guest: "James Rodriguez", dates: "Mar 18 - Mar 25", amount: 28900 },
-  ];
+  const bookings = detail?.bookings ?? [];
+
+  const availabilityBlocks = detail?.availabilityBlocks ?? [];
+
+  const formatDate = (value?: string | null) => {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleDateString();
+  };
+
+  const formatAmount = (amount: number | string) => {
+    const n = typeof amount === "number" ? amount : parseFloat(String(amount));
+    if (!Number.isFinite(n)) return "—";
+    return n.toLocaleString();
+  };
 
   return (
     <div
@@ -131,34 +163,41 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
           <div className="mb-8">
             <div className="relative h-80 rounded-xl overflow-hidden mb-4">
               <Image
-                src={yacht.image}
+                src={activeImage}
                 alt={yacht.name}
                 fill
                 className="object-cover"
-                sizes="(max-width: 1280px) 100vw, 1152px"
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 90vw, 1400px"
+                quality={90}
               />
-              <button
-                type="button"
-                className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full backdrop-blur-sm"
-                style={{
-                  backgroundColor: `${colors.cardBg}CC`,
-                  color: colors.textPrimary,
-                }}
-                aria-label="Previous image"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                type="button"
-                className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full backdrop-blur-sm"
-                style={{
-                  backgroundColor: `${colors.cardBg}CC`,
-                  color: colors.textPrimary,
-                }}
-                aria-label="Next image"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
+              {hasMultipleImages && (
+                <>
+                  <button
+                    type="button"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full backdrop-blur-sm"
+                    style={{
+                      backgroundColor: `${colors.cardBg}CC`,
+                      color: colors.textPrimary,
+                    }}
+                    aria-label="Previous image"
+                    onClick={() => setActiveIndex((idx) => (idx - 1 + images.length) % images.length)}
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full backdrop-blur-sm"
+                    style={{
+                      backgroundColor: `${colors.cardBg}CC`,
+                      color: colors.textPrimary,
+                    }}
+                    aria-label="Next image"
+                    onClick={() => setActiveIndex((idx) => (idx + 1) % images.length)}
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
             </div>
             <div className="grid grid-cols-4 gap-3">
               {images.map((img, idx) => (
@@ -166,14 +205,33 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
                   key={idx}
                   className="h-24 rounded-lg overflow-hidden cursor-pointer border-2 transition-all"
                   style={{
-                    borderColor: idx === 0 ? colors.accent : "transparent",
+                    borderColor: idx === activeIndex ? colors.accent : "transparent",
                   }}
+                  onClick={() => setActiveIndex(idx)}
                 >
                   <Image src={img} alt="" width={200} height={96} className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
           </div>
+
+          {isLoading && (
+            <div className="flex justify-center py-6">
+              <LoadingSpinner size="md" text="Loading yacht details..." />
+            </div>
+          )}
+          {isError && (
+            <div
+              className="rounded-xl border p-4 text-sm"
+              style={{
+                backgroundColor: colors.background,
+                borderColor: colors.danger,
+                color: colors.textPrimary,
+              }}
+            >
+              {error instanceof Error ? error.message : "Failed to load yacht details."}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="space-y-6">
@@ -212,11 +270,16 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
                   Amenities & Features
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
-                  {amenities.map((amenity, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
+                  {amenities.length === 0 && (
+                    <span className="text-sm" style={{ color: colors.textSecondary }}>
+                      No amenities listed.
+                    </span>
+                  )}
+                  {amenities.map((amenity) => (
+                    <div key={amenity.id} className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 flex-shrink-0" style={{ color: colors.accent }} />
                       <span className="text-sm" style={{ color: colors.textPrimary }}>
-                        {amenity}
+                        {amenity.name}
                       </span>
                     </div>
                   ))}
@@ -234,9 +297,18 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
                   Documents & Certificates
                 </h3>
                 <div className="space-y-3">
-                  {documents.map((doc, idx) => (
+                  {documents.length === 0 && (
+                    <span className="text-sm" style={{ color: colors.textSecondary }}>
+                      No documents uploaded.
+                    </span>
+                  )}
+                  {documents.map((doc) => {
+                    const isExpired =
+                      doc.isExpired ||
+                      (doc.expiryDate ? new Date(doc.expiryDate).getTime() < Date.now() : false);
+                    return (
                     <div
-                      key={idx}
+                      key={doc.id}
                       className="flex items-center justify-between p-3 rounded-lg border"
                       style={{
                         backgroundColor: colors.cardBg,
@@ -248,31 +320,31 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
                           className="p-2 rounded-lg"
                           style={{
                             backgroundColor:
-                              doc.status === "valid" ? `${colors.accent}15` : `${colors.accentGold}15`,
+                              !isExpired ? `${colors.accent}15` : `${colors.accentGold}15`,
                           }}
                         >
-                          {doc.name.includes("Insurance") ? (
+                          {doc.documentType?.toLowerCase().includes("insurance") ? (
                             <Shield
                               className="w-4 h-4"
                               style={{
-                                color: doc.status === "valid" ? colors.accent : colors.accentGold,
+                                color: !isExpired ? colors.accent : colors.accentGold,
                               }}
                             />
                           ) : (
                             <FileText
                               className="w-4 h-4"
                               style={{
-                                color: doc.status === "valid" ? colors.accent : colors.accentGold,
+                                color: !isExpired ? colors.accent : colors.accentGold,
                               }}
                             />
                           )}
                         </div>
                         <div>
                           <div className="text-sm font-medium" style={{ color: colors.textPrimary }}>
-                            {doc.name}
+                            {doc.documentType}
                           </div>
                           <div className="text-xs" style={{ color: colors.textSecondary }}>
-                            Expires: {doc.expiry}
+                            Expires: {formatDate(doc.expiryDate)}
                           </div>
                         </div>
                       </div>
@@ -280,14 +352,14 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
                         className="px-2 py-1 rounded text-xs font-medium"
                         style={{
                           backgroundColor:
-                            doc.status === "valid" ? `${colors.success}15` : `${colors.warning}15`,
-                          color: doc.status === "valid" ? colors.success : colors.warning,
+                            !isExpired ? `${colors.success}15` : `${colors.warning}15`,
+                          color: !isExpired ? colors.success : colors.warning,
                         }}
                       >
-                        {doc.status === "valid" ? "Valid" : "Expiring Soon"}
+                        {!isExpired ? "Valid" : "Expired"}
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </div>
             </div>
@@ -304,9 +376,14 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
                   Upcoming Bookings
                 </h3>
                 <div className="space-y-3">
-                  {upcomingBookings.map((booking, idx) => (
+                  {bookings.length === 0 && (
+                    <span className="text-sm" style={{ color: colors.textSecondary }}>
+                      No bookings found.
+                    </span>
+                  )}
+                  {bookings.map((booking) => (
                     <div
-                      key={idx}
+                      key={booking.id}
                       className="p-4 rounded-lg border"
                       style={{
                         backgroundColor: colors.cardBg,
@@ -315,18 +392,20 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-mono" style={{ color: colors.accent }}>
-                          #{booking.id}
+                          #{booking.bookingRef}
                         </span>
                         <span className="text-sm font-mono font-bold" style={{ color: colors.textPrimary }}>
-                          ${booking.amount.toLocaleString()}
+                          {booking.currencyCode} {formatAmount(booking.totalAmount)}
                         </span>
                       </div>
                       <div className="text-sm font-medium mb-1" style={{ color: colors.textPrimary }}>
-                        {booking.guest}
+                        {booking.status}
                       </div>
                       <div className="flex items-center gap-2 text-xs" style={{ color: colors.textSecondary }}>
                         <Calendar className="w-3 h-3" />
-                        <span>{booking.dates}</span>
+                        <span>
+                          {formatDate(booking.startDate)} - {formatDate(booking.endDate)} • {booking.guestCount} guests
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -341,55 +420,38 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
                 }}
               >
                 <h3 className="text-lg font-bold mb-4" style={{ color: colors.textPrimary }}>
-                  February 2026 Availability
+                  Availability Blocks
                 </h3>
-                <div className="grid grid-cols-7 gap-2 mb-2">
-                  {["M", "T", "W", "T", "F", "S", "S"].map((day, idx) => (
+                <div className="space-y-3">
+                  {availabilityBlocks.length === 0 && (
+                    <span className="text-sm" style={{ color: colors.textSecondary }}>
+                      No availability blocks.
+                    </span>
+                  )}
+                  {availabilityBlocks.map((block) => (
                     <div
-                      key={idx}
-                      className="text-center text-xs font-medium py-1"
-                      style={{ color: colors.textSecondary }}
+                      key={block.id}
+                      className="flex items-center justify-between p-3 rounded-lg border"
+                      style={{
+                        backgroundColor: colors.cardBg,
+                        borderColor: colors.cardBorder,
+                      }}
                     >
-                      {day}
+                      <div>
+                        <div className="text-sm font-medium" style={{ color: colors.textPrimary }}>
+                          {block.reason || "Blocked"}
+                        </div>
+                        <div className="text-xs" style={{ color: colors.textSecondary }}>
+                          {formatDate(block.startDate)} - {formatDate(block.endDate)}
+                        </div>
+                      </div>
+                      {block.notes && (
+                        <div className="text-xs" style={{ color: colors.textSecondary }}>
+                          {block.notes}
+                        </div>
+                      )}
                     </div>
                   ))}
-                </div>
-                <div className="grid grid-cols-7 gap-2">
-                  {Array.from({ length: 28 }, (_, i) => i + 1).map((day) => {
-                    const isBooked = day >= 22 && day <= 28;
-                    const isToday = day === 18;
-                    return (
-                      <div
-                        key={day}
-                        className="aspect-square flex items-center justify-center text-sm rounded-lg border cursor-pointer transition-all"
-                        style={{
-                          backgroundColor: isBooked
-                            ? `${colors.accentGold}15`
-                            : isToday
-                              ? `${colors.accent}15`
-                              : "transparent",
-                          borderColor: isToday ? colors.accent : colors.cardBorder,
-                          color: isBooked
-                            ? colors.accentGold
-                            : isToday
-                              ? colors.accent
-                              : colors.textPrimary,
-                        }}
-                      >
-                        {day}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="flex items-center gap-4 mt-4 text-xs">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: `${colors.accent}30` }} />
-                    <span style={{ color: colors.textSecondary }}>Today</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: `${colors.accentGold}30` }} />
-                    <span style={{ color: colors.textSecondary }}>Booked</span>
-                  </div>
                 </div>
               </div>
             </div>

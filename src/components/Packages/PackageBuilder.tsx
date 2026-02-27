@@ -1,95 +1,53 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { Package, DollarSign, CheckCircle, TrendingUp } from "lucide-react";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { useTheme } from "@/context/ThemeContext";
 import { usePackageBuilder } from "@/context/PackageBuilderContext";
 import { PackageKPICard } from "./PackageKPICard";
 import { PackageFilters } from "./PackageFilters";
 import { PackagesTable, type Package as PackageType } from "./PackagesTable";
 import { PackageForm } from "./PackageForm";
+import { PackageDetailDrawer } from "./PackageDetailDrawer";
+import { PackageEditDrawer } from "./PackageEditDrawer";
+import { deletePackage, packagesKeys, usePackagesQuery, type PackageListItem } from "@/lib/api/packages";
+import { useRegionsQuery } from "@/lib/api/regions";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+import { useQueryClient } from "@tanstack/react-query";
 
-const packagesData: PackageType[] = [
-  {
-    id: "PKG-001",
-    name: "Mediterranean Sunset Experience",
-    yacht: "Azure Dream",
-    duration: "8 hours",
-    region: "Mediterranean",
-    services: ["Skipper", "Fuel", "Catering", "Transfer", "Crew"],
-    price: 3850,
-    status: "Active",
-  },
-  {
-    id: "PKG-002",
-    name: "Caribbean Full Day Adventure",
-    yacht: "Ocean Majesty",
-    duration: "12 hours",
-    region: "Caribbean",
-    services: ["Skipper", "Fuel", "Catering", "Snorkeling"],
-    price: 5200,
-    status: "Active",
-  },
-  {
-    id: "PKG-003",
-    name: "Half-Day Island Hopping",
-    yacht: "Twin Seas",
-    duration: "4 hours",
-    region: "Pacific",
-    services: ["Skipper", "Fuel", "Transfer"],
-    price: 1850,
-    status: "Draft",
-  },
-  {
-    id: "PKG-004",
-    name: "Weekly Luxury Cruise",
-    yacht: "Platinum Wave",
-    duration: "7 days",
-    region: "Mediterranean",
-    services: ["Skipper", "Fuel", "Catering", "Transfer", "Crew", "Snorkeling"],
-    price: 28500,
-    status: "Active",
-  },
-  {
-    id: "PKG-005",
-    name: "Romantic Dinner Cruise",
-    yacht: "Silver Horizon",
-    duration: "4 hours",
-    region: "Indian Ocean",
-    services: ["Skipper", "Fuel", "Catering"],
-    price: 2400,
-    status: "Active",
-  },
-  {
-    id: "PKG-006",
-    name: "Corporate Event Package",
-    yacht: "Ocean Majesty",
-    duration: "6 hours",
-    region: "Caribbean",
-    services: ["Skipper", "Fuel", "Catering", "Crew", "Transfer"],
-    price: 4750,
-    status: "Active",
-  },
-  {
-    id: "PKG-007",
-    name: "Snorkeling & Diving Special",
-    yacht: "Twin Seas",
-    duration: "8 hours",
-    region: "Pacific",
-    services: ["Skipper", "Fuel", "Snorkeling", "Transfer"],
-    price: 3200,
-    status: "Draft",
-  },
-  {
-    id: "PKG-008",
-    name: "Weekend Gateway",
-    yacht: "Wind Chaser",
-    duration: "3 days",
-    region: "Mediterranean",
-    services: ["Skipper", "Fuel", "Catering", "Crew"],
-    price: 12800,
-    status: "Active",
-  },
-];
+const PAGE_SIZE = 50;
+
+function formatDuration(pkg: PackageListItem): string {
+  if (pkg.durationHours) {
+    const hours = parseFloat(String(pkg.durationHours));
+    if (Number.isFinite(hours)) {
+      return `${hours} hours`;
+    }
+  }
+  if (pkg.durationDays) {
+    return `${pkg.durationDays} days`;
+  }
+  const type = pkg.durationType?.toLowerCase();
+  if (type === "half_day") return "Half-day";
+  if (type === "full_day") return "Full-day";
+  if (type === "weekly") return "Weekly";
+  return "Custom";
+}
+
+function statusToLabel(status: string): PackageType["status"] {
+  const s = status?.toLowerCase();
+  if (s === "active") return "Active";
+  if (s === "draft") return "Draft";
+  if (s === "archived") return "Archived";
+  return status || "Draft";
+}
+
+function formatPrice(price: number | string): number {
+  const n = typeof price === "number" ? price : parseFloat(String(price));
+  return Number.isFinite(n) ? n : 0;
+}
 
 export default function PackageBuilder() {
   const { colors } = useTheme();
@@ -102,62 +60,94 @@ export default function PackageBuilder() {
     setSelectedDuration,
     selectedStatus,
     setSelectedStatus,
+    minPrice,
+    setMinPrice,
+    maxPrice,
+    setMaxPrice,
     isFormOpen,
     setIsFormOpen,
   } = usePackageBuilder();
 
-  const totalPackages = packagesData.length;
-  const activePackages = packagesData.filter((p) => p.status === "Active").length;
-  const avgPackageValue = Math.round(
-    packagesData.reduce((sum, p) => sum + p.price, 0) / packagesData.length
+  const { data: regionsData, isLoading: regionsLoading } = useRegionsQuery();
+  const queryClient = useQueryClient();
+  const regions = regionsData ?? [];
+
+  const filters = useMemo(
+    () => ({
+      regionId: selectedRegion || undefined,
+      durationType: selectedDuration || undefined,
+      status: selectedStatus || undefined,
+      minPrice: minPrice ? Number(minPrice) : undefined,
+      maxPrice: maxPrice ? Number(maxPrice) : undefined,
+    }),
+    [selectedRegion, selectedDuration, selectedStatus, minPrice, maxPrice]
   );
-  const mostBookedPackage = "Sunset Experience";
 
-  const durationKeywords: Record<string, string[]> = {
-    "Half-day": ["4", "half"],
-    "Full-day": ["6", "8", "12", "full"],
-    Weekly: ["7", "week"],
-    Custom: [],
+  const { data, isLoading, isError, error } = usePackagesQuery(1, PAGE_SIZE, filters);
+  const packagesList = data?.packages ?? [];
+
+  const selectedRegionLabel = useMemo(
+    () => regions.find((r) => r.id === selectedRegion)?.name ?? "",
+    [regions, selectedRegion]
+  );
+
+  const mappedPackages: PackageType[] = useMemo(
+    () =>
+      packagesList.map((pkg) => ({
+        id: pkg.id,
+        name: pkg.name,
+        yacht: pkg.yacht?.name ?? pkg.yachtCategory ?? "—",
+        duration: formatDuration(pkg),
+        region: selectedRegionLabel || "Multiple",
+        price: formatPrice(pkg.basePrice),
+        currency: pkg.currency?.symbol ?? pkg.currencyCode,
+        status: statusToLabel(pkg.status),
+      })),
+    [packagesList, selectedRegionLabel]
+  );
+
+  const filteredPackages = useMemo(() => {
+    if (!searchQuery) return mappedPackages;
+    const q = searchQuery.toLowerCase();
+    return mappedPackages.filter((pkg) => pkg.name.toLowerCase().includes(q));
+  }, [mappedPackages, searchQuery]);
+
+  const totalPackages = data?.total ?? filteredPackages.length;
+  const activePackages = filteredPackages.filter((p) => p.status === "Active").length;
+  const avgPackageValue =
+    filteredPackages.length > 0
+      ? Math.round(filteredPackages.reduce((sum, p) => sum + p.price, 0) / filteredPackages.length)
+      : 0;
+  const mostBookedPackage = "—";
+
+  const [selectedPackageId, setSelectedPackageId] = useState<string | null>(null);
+  const [selectedEditPackageId, setSelectedEditPackageId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PackageType | null>(null);
+
+  const handleView = (pkg: PackageType) => {
+    setSelectedPackageId(pkg.id);
   };
-
-  const filteredPackages = packagesData.filter((pkg) => {
-    const matchesSearch = pkg.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesRegion =
-      selectedRegion === "All Regions" || pkg.region === selectedRegion;
-    const keywords = durationKeywords[selectedDuration];
-    const matchesDuration =
-      selectedDuration === "All Durations" ||
-      !keywords ||
-      keywords.some((k) => pkg.duration.toLowerCase().includes(k));
-    const matchesStatus =
-      selectedStatus === "All Status" || pkg.status === selectedStatus;
-
-    return (
-      matchesSearch &&
-      matchesRegion &&
-      matchesDuration &&
-      matchesStatus
-    );
-  });
 
   const handleEdit = (pkg: PackageType) => {
-    setIsFormOpen(true);
-    // Could set a "editingPackage" in context to prefill form
+    setSelectedEditPackageId(pkg.id);
   };
 
-  const handleClone = (_pkg: PackageType) => {
-    // Clone logic – could open form with prefilled data
-    setIsFormOpen(true);
+  const handleDelete = (pkg: PackageType) => {
+    setPendingDelete(pkg);
   };
 
-  const handleDelete = (_pkg: PackageType) => {
-    // Delete logic – confirm and remove
-  };
-
-  const handleToggleStatus = (_pkg: PackageType) => {
-    // Toggle Active/Draft
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    try {
+      await deletePackage(pendingDelete.id);
+      await queryClient.invalidateQueries({ queryKey: packagesKeys.lists() });
+      toast.success("Package deleted successfully");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete package";
+      toast.error(message);
+    } finally {
+      setPendingDelete(null);
+    }
   };
 
   return (
@@ -203,44 +193,103 @@ export default function PackageBuilder() {
           />
         </div>
 
-        {/* Row 2 - Table + Filters */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-4 md:gap-6 mb-6 md:mb-8">
-          <div className="lg:hidden">
-            <PackageFilters
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              selectedRegion={selectedRegion}
-              selectedDuration={selectedDuration}
-              selectedStatus={selectedStatus}
-              onRegionChange={setSelectedRegion}
-              onDurationChange={setSelectedDuration}
-              onStatusChange={setSelectedStatus}
-            />
-          </div>
-
-          <PackagesTable
-            packages={filteredPackages}
-            onEdit={handleEdit}
-            onClone={handleClone}
-            onDelete={handleDelete}
-            onToggleStatus={handleToggleStatus}
+        {/* Row 2 - Quick Filters */}
+        <div className="mb-6 md:mb-8">
+          <PackageFilters
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedRegion={selectedRegion}
+            selectedDuration={selectedDuration}
+            selectedStatus={selectedStatus}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+            regions={regions}
+            regionsLoading={regionsLoading}
+            onRegionChange={setSelectedRegion}
+            onDurationChange={setSelectedDuration}
+            onStatusChange={setSelectedStatus}
+            onMinPriceChange={setMinPrice}
+            onMaxPriceChange={setMaxPrice}
           />
+        </div>
 
-          <div className="hidden lg:block">
-            <PackageFilters
-              searchQuery={searchQuery}
-              onSearchChange={setSearchQuery}
-              selectedRegion={selectedRegion}
-              selectedDuration={selectedDuration}
-              selectedStatus={selectedStatus}
-              onRegionChange={setSelectedRegion}
-              onDurationChange={setSelectedDuration}
-              onStatusChange={setSelectedStatus}
+        {/* Row 3 - Table */}
+        <div className="mb-6 md:mb-8">
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <LoadingSpinner size="lg" text="Loading packages..." />
+            </div>
+          ) : isError ? (
+            <div
+              className="rounded-xl border p-6 text-center"
+              style={{
+                backgroundColor: colors.cardBg,
+                borderColor: colors.danger,
+                color: colors.textPrimary,
+              }}
+            >
+              <p className="font-medium">Failed to load packages.</p>
+              <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                {error instanceof Error ? error.message : "Please try again later."}
+              </p>
+            </div>
+          ) : (
+            <PackagesTable
+              packages={filteredPackages}
+              onView={handleView}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
             />
-          </div>
+          )}
         </div>
 
         <PackageForm isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} />
+        <PackageDetailDrawer
+          packageId={selectedPackageId}
+          onClose={() => setSelectedPackageId(null)}
+        />
+        <PackageEditDrawer
+          packageId={selectedEditPackageId}
+          onClose={() => setSelectedEditPackageId(null)}
+        />
+
+        {pendingDelete && (
+          <div
+            className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+            style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+          >
+            <div
+              className="w-full max-w-md rounded-2xl border p-6"
+              style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder }}
+            >
+              <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>
+                Delete package?
+              </h3>
+              <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
+                This will permanently delete "{pendingDelete.name}". This action cannot be undone.
+              </p>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPendingDelete(null)}
+                  className="px-4 py-2 rounded-lg border text-sm"
+                  style={{ borderColor: colors.cardBorder, color: colors.textPrimary }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDelete}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                  style={{ backgroundColor: colors.danger }}
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        <ToastContainer position="top-right" autoClose={3000} />
       </div>
     </div>
   );

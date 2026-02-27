@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Calendar,
   CheckCircle,
@@ -9,110 +9,16 @@ import {
   XCircle,
 } from "lucide-react";
 import { useBookings } from "@/context/BookingsContext";
+import { bookingsKeys, cancelBooking, useBookingsQuery } from "@/lib/api/bookings";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+import { useQueryClient } from "@tanstack/react-query";
 import { BookingKPICard } from "./BookingKPICard";
 import { BookingCalendar } from "./BookingCalendar";
 import { UpcomingBookingsList, type UpcomingBooking } from "./UpcomingBookingsList";
 import { BookingsTable, type Booking } from "./BookingsTable";
 import { BookingDetailPanel } from "./BookingDetailPanel";
 
-const bookingsData: Booking[] = [
-  {
-    id: "BK-2847",
-    customer: "Michael Chen",
-    yacht: "Azure Dream",
-    package: "Sunset Experience",
-    region: "Mediterranean",
-    checkIn: "Feb 22",
-    checkOut: "Feb 28",
-    extras: "Wine, Photos",
-    totalAmount: 5115,
-    status: "paid",
-  },
-  {
-    id: "BK-2901",
-    customer: "Sarah Williams",
-    yacht: "Ocean Majesty",
-    package: "Full Day Adventure",
-    region: "Caribbean",
-    checkIn: "Mar 5",
-    checkOut: "Mar 12",
-    extras: "Snorkeling, Catering",
-    totalAmount: 6850,
-    status: "confirmed",
-  },
-  {
-    id: "BK-2954",
-    customer: "James Rodriguez",
-    yacht: "Twin Seas",
-    package: "Island Hopping",
-    region: "Pacific",
-    checkIn: "Mar 18",
-    checkOut: "Mar 25",
-    extras: "Water Sports",
-    totalAmount: 4200,
-    status: "inquiry",
-  },
-  {
-    id: "BK-2812",
-    customer: "Emma Thompson",
-    yacht: "Platinum Wave",
-    package: "Weekly Luxury",
-    region: "Mediterranean",
-    checkIn: "Feb 1",
-    checkOut: "Feb 8",
-    extras: "Crew, Catering, Photos",
-    totalAmount: 32500,
-    status: "completed",
-  },
-  {
-    id: "BK-2735",
-    customer: "David Park",
-    yacht: "Wind Chaser",
-    package: "Romantic Dinner",
-    region: "Indian Ocean",
-    checkIn: "Feb 14",
-    checkOut: "Feb 14",
-    extras: "Premium Catering",
-    totalAmount: 2850,
-    status: "cancelled",
-  },
-  {
-    id: "BK-3021",
-    customer: "Lisa Anderson",
-    yacht: "Silver Horizon",
-    package: "Corporate Event",
-    region: "Caribbean",
-    checkIn: "Apr 2",
-    checkOut: "Apr 2",
-    extras: "Crew, Catering",
-    totalAmount: 5400,
-    status: "inquiry",
-  },
-  {
-    id: "BK-3089",
-    customer: "Robert Kim",
-    yacht: "Sea Harmony",
-    package: "Weekend Gateway",
-    region: "Pacific",
-    checkIn: "Apr 15",
-    checkOut: "Apr 18",
-    extras: "Water Sports, Photos",
-    totalAmount: 14200,
-    status: "confirmed",
-  },
-  {
-    id: "BK-2999",
-    customer: "Maria Garcia",
-    yacht: "Azure Dream",
-    package: "Half-Day Charter",
-    region: "Mediterranean",
-    checkIn: "Mar 28",
-    checkOut: "Mar 28",
-    extras: "Catering",
-    totalAmount: 2150,
-    status: "paid",
-  },
-];
+const PAGE_SIZE = 20;
 
 const calendarBookings = [
   { id: "1", yacht: "Azure Dream", customer: "Michael Chen", status: "confirmed" as const, day: 22 },
@@ -192,21 +98,45 @@ export default function BookingEngine() {
   const { selectedStatus } = useBookings();
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showDetailPanel, setShowDetailPanel] = useState(false);
+  const [page, setPage] = useState(1);
+  const queryClient = useQueryClient();
 
-  const totalBookings = bookingsData.length;
-  const confirmedBookings = bookingsData.filter(
+  const statusFilter =
+    selectedStatus === "All" ? undefined : selectedStatus.toLowerCase();
+
+  const { data, isLoading, isError, error } = useBookingsQuery(page, PAGE_SIZE, {
+    status: statusFilter,
+  });
+
+  useEffect(() => {
+    setPage(1);
+  }, [selectedStatus]);
+
+  const bookings = useMemo<Booking[]>(() => {
+    return (data?.bookings ?? []).map((b) => {
+      const customerName = `${b.customer?.firstName ?? ""} ${b.customer?.lastName ?? ""}`.trim() || "—";
+      return {
+        id: b.bookingRef ?? b.id,
+        customer: customerName,
+        yacht: b.yacht?.name ?? "—",
+        package: b.package?.name ?? "—",
+        region: b.region?.name ?? "—",
+        startDate: b.startDate,
+        endDate: b.endDate,
+        totalAmount: typeof b.totalAmount === "number" ? b.totalAmount : parseFloat(String(b.totalAmount)) || 0,
+        currency: b.currency?.symbol ?? b.currency?.code ?? "",
+        status: b.status as Booking["status"],
+      };
+    });
+  }, [data?.bookings]);
+
+  const totalBookings = data?.total ?? bookings.length;
+  const confirmedBookings = bookings.filter(
     (b) => b.status === "confirmed" || b.status === "paid"
   ).length;
-  const pendingInquiries = bookingsData.filter((b) => b.status === "inquiry").length;
-  const completedBookings = bookingsData.filter((b) => b.status === "completed").length;
-  const cancelledBookings = bookingsData.filter((b) => b.status === "cancelled").length;
-
-  const filteredBookings =
-    selectedStatus === "All"
-      ? bookingsData
-      : bookingsData.filter(
-          (b) => b.status.toLowerCase() === selectedStatus.toLowerCase()
-        );
+  const pendingInquiries = bookings.filter((b) => b.status === "inquiry").length;
+  const completedBookings = bookings.filter((b) => b.status === "completed").length;
+  const cancelledBookings = bookings.filter((b) => b.status === "cancelled").length;
 
   const handleView = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -217,12 +147,17 @@ export default function BookingEngine() {
     console.log("Edit booking:", booking.id);
   };
 
-  const handleCancel = (booking: Booking) => {
-    console.log("Cancel booking:", booking.id);
+  const handleDelete = async (booking: Booking) => {
+    try {
+      await cancelBooking(booking.id);
+      await queryClient.invalidateQueries({ queryKey: bookingsKeys.lists() });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleQuickView = (booking: UpcomingBooking) => {
-    const fullBooking = bookingsData.find((b) => b.id === booking.id);
+    const fullBooking = bookings.find((b) => b.id === booking.id);
     if (fullBooking) {
       setSelectedBooking(fullBooking);
       setShowDetailPanel(true);
@@ -280,12 +215,34 @@ export default function BookingEngine() {
 
       {/* Row 3 - Bookings Table */}
       <div className="mb-6 md:mb-8">
-        <BookingsTable
-          bookings={filteredBookings}
-          onView={handleView}
-          onEdit={handleEdit}
-          onCancel={handleCancel}
-        />
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <LoadingSpinner size="lg" text="Loading bookings..." />
+          </div>
+        ) : isError ? (
+          <div className="rounded-xl border p-6 text-center text-sm">
+            {error instanceof Error ? error.message : "Failed to load bookings."}
+          </div>
+        ) : (
+          <BookingsTable
+            bookings={bookings}
+            onView={handleView}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
+        {data?.totalPages && data.totalPages > 1 && (
+          <div className="flex items-center justify-end gap-3 mt-4">
+            <button
+              type="button"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={page >= data.totalPages}
+              className="px-4 py-2 rounded-lg border text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next Page
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Row 4 - Booking Detail Panel */}

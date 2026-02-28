@@ -1,7 +1,6 @@
 "use client";
 
 import { Plus, ChevronDown } from "lucide-react";
-import Link from "next/link";
 import { useTheme } from "@/context/ThemeContext";
 import { useBookings, type BookingStatusFilter } from "@/context/BookingsContext";
 
@@ -24,7 +23,7 @@ const REGIONS = [
 
 export function BookingsTopBarActions() {
   const { colors } = useTheme();
-  const { selectedStatus, setSelectedStatus, selectedRegion, setSelectedRegion } =
+  const { selectedStatus, setSelectedStatus, selectedRegion, setSelectedRegion, setIsCreateOpen } =
     useBookings();
 
   return (
@@ -94,8 +93,9 @@ export function BookingsTopBarActions() {
         />
       </div>
 
-      <Link
-        href="/bookings/new"
+      <button
+        type="button"
+        onClick={() => setIsCreateOpen(true)}
         className="flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-lg transition-all text-xs md:text-sm font-semibold text-white shadow-lg flex-shrink-0"
         style={{
           background: `linear-gradient(to right, ${colors.accent}, #00B39F)`,
@@ -104,7 +104,7 @@ export function BookingsTopBarActions() {
       >
         <Plus className="w-4 h-4" />
         <span className="hidden sm:inline">New Booking</span>
-      </Link>
+      </button>
     </div>
   );
 }

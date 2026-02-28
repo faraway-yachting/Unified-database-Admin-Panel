@@ -107,6 +107,7 @@ export const config = {
     bookings: {
       list: url('/api/bookings'),
       create: url('/api/bookings'),
+      upcoming: url('/api/bookings/upcoming'),
       calendar: url('/api/bookings/calendar'),
       availability: url('/api/bookings/availability'),
       byId: (id: string) => url(`/api/bookings/${id}`),

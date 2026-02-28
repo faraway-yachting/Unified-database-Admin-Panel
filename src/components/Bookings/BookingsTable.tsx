@@ -5,6 +5,7 @@ import { useTheme } from "@/context/ThemeContext";
 
 export interface Booking {
   id: string;
+  bookingRef: string;
   customer: string;
   yacht: string;
   package: string;
@@ -173,7 +174,7 @@ export function BookingsTable({
                             textDecoration: isCancelled ? "line-through" : "none",
                           }}
                         >
-                          {booking.id}
+                          {booking.bookingRef}
                         </div>
                       </td>
                       <td className="py-3 md:py-4 px-2">

@@ -21,6 +21,8 @@ interface BookingsContextValue {
   setSelectedStatus: (s: BookingStatusFilter) => void;
   selectedRegion: string;
   setSelectedRegion: (r: string) => void;
+  isCreateOpen: boolean;
+  setIsCreateOpen: (open: boolean) => void;
 }
 
 const defaultValue: BookingsContextValue = {
@@ -28,6 +30,8 @@ const defaultValue: BookingsContextValue = {
   setSelectedStatus: () => {},
   selectedRegion: "All Regions",
   setSelectedRegion: () => {},
+  isCreateOpen: false,
+  setIsCreateOpen: () => {},
 };
 
 const BookingsContext = createContext<BookingsContextValue>(defaultValue);
@@ -35,12 +39,15 @@ const BookingsContext = createContext<BookingsContextValue>(defaultValue);
 export function BookingsProvider({ children }: { children: ReactNode }) {
   const [selectedStatus, setSelectedStatus] = useState<BookingStatusFilter>("All");
   const [selectedRegion, setSelectedRegion] = useState("All Regions");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const value: BookingsContextValue = {
     selectedStatus,
     setSelectedStatus: useCallback((s: BookingStatusFilter) => setSelectedStatus(s), []),
     selectedRegion,
     setSelectedRegion: useCallback((r: string) => setSelectedRegion(r), []),
+    isCreateOpen,
+    setIsCreateOpen: useCallback((open: boolean) => setIsCreateOpen(open), []),
   };
 
   return (

@@ -1,6 +1,4 @@
 "use client";
-
-import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -8,23 +6,37 @@ export interface BookingEvent {
   id: string;
   yacht: string;
   customer: string;
-  status: "confirmed" | "inquiry" | "completed" | "cancelled";
+  status: "confirmed" | "paid" | "inquiry" | "completed" | "cancelled";
   day: number;
 }
 
 interface BookingCalendarProps {
-  month: string;
+  monthLabel: string;
+  monthIndex: number;
   year: number;
   bookings: BookingEvent[];
+  isLoading?: boolean;
+  errorMessage?: string;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
 }
 
-export function BookingCalendar({ month, year, bookings }: BookingCalendarProps) {
+export function BookingCalendar({
+  monthLabel,
+  monthIndex,
+  year,
+  bookings,
+  isLoading,
+  errorMessage,
+  onPrevMonth,
+  onNextMonth,
+}: BookingCalendarProps) {
   const { colors } = useTheme();
-  const [currentMonth] = useState(month);
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "confirmed":
+      case "paid":
         return colors.accent;
       case "inquiry":
         return colors.accentGold;
@@ -44,8 +56,11 @@ export function BookingCalendar({ month, year, bookings }: BookingCalendarProps)
       .join("");
   };
 
-  const daysInMonth = 28;
-  const firstDayOffset = 5;
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const firstDay = new Date(year, monthIndex, 1).getDay();
+  const firstDayOffset = (firstDay + 6) % 7;
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === monthIndex;
 
   return (
     <div
@@ -67,8 +82,18 @@ export function BookingCalendar({ month, year, bookings }: BookingCalendarProps)
             className="text-xs md:text-sm"
             style={{ color: colors.textSecondary }}
           >
-            {currentMonth} {year}
+            {monthLabel} {year}
           </p>
+          {isLoading && (
+            <p className="text-[10px] md:text-xs mt-1" style={{ color: colors.textSecondary }}>
+              Loading calendar...
+            </p>
+          )}
+          {errorMessage && !isLoading && (
+            <p className="text-[10px] md:text-xs mt-1" style={{ color: colors.danger }}>
+              {errorMessage}
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -84,6 +109,7 @@ export function BookingCalendar({ month, year, bookings }: BookingCalendarProps)
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = colors.background;
             }}
+            onClick={onPrevMonth}
             aria-label="Previous month"
           >
             <ChevronLeft className="w-4 h-4" />
@@ -101,6 +127,7 @@ export function BookingCalendar({ month, year, bookings }: BookingCalendarProps)
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = colors.background;
             }}
+            onClick={onNextMonth}
             aria-label="Next month"
           >
             <ChevronRight className="w-4 h-4" />
@@ -124,7 +151,7 @@ export function BookingCalendar({ month, year, bookings }: BookingCalendarProps)
         ))}
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((day) => {
           const dayBookings = bookings.filter((b) => b.day === day);
-          const isToday = day === 19;
+          const isToday = isCurrentMonth && day === today.getDate();
 
           return (
             <div

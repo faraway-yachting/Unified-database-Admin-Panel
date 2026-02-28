@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Eye, Calendar, MapPin } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
@@ -20,11 +19,15 @@ export interface UpcomingBooking {
 interface UpcomingBookingsListProps {
   bookings: UpcomingBooking[];
   onQuickView: (booking: UpcomingBooking) => void;
+  isLoading?: boolean;
+  errorMessage?: string;
 }
 
 export function UpcomingBookingsList({
   bookings,
   onQuickView,
+  isLoading,
+  errorMessage,
 }: UpcomingBookingsListProps) {
   const { colors } = useTheme();
 
@@ -80,14 +83,27 @@ export function UpcomingBookingsList({
         </p>
       </div>
 
-      <div
-        className="space-y-3 max-h-[600px] overflow-y-auto pr-2"
-        style={{
-          scrollbarWidth: "thin",
-          scrollbarColor: `${colors.cardBorder} transparent`,
-        }}
-      >
-        {bookings.map((booking) => {
+      {isLoading ? (
+        <div className="text-xs md:text-sm py-6" style={{ color: colors.textSecondary }}>
+          Loading upcoming bookings...
+        </div>
+      ) : errorMessage ? (
+        <div className="text-xs md:text-sm py-6" style={{ color: colors.danger }}>
+          {errorMessage}
+        </div>
+      ) : bookings.length === 0 ? (
+        <div className="text-xs md:text-sm py-6" style={{ color: colors.textSecondary }}>
+          No upcoming bookings found.
+        </div>
+      ) : (
+        <div
+          className="space-y-3 max-h-[600px] overflow-y-auto pr-2"
+          style={{
+            scrollbarWidth: "thin",
+            scrollbarColor: `${colors.cardBorder} transparent`,
+          }}
+        >
+          {bookings.map((booking) => {
           const statusConfig = getStatusConfig(booking.status);
 
           return (
@@ -109,12 +125,11 @@ export function UpcomingBookingsList({
             >
               <div className="flex items-center gap-2 md:gap-3 mb-3">
                 <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0">
-                  <Image
+                  <img
                     src={booking.customer.avatar}
                     alt={booking.customer.name}
-                    fill
-                    className="object-cover"
-                    sizes="40px"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -189,8 +204,9 @@ export function UpcomingBookingsList({
               </div>
             </div>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }

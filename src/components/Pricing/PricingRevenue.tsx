@@ -6,194 +6,70 @@ import {
   CreditCard,
   Tag,
   Wallet,
+  Search,
+  SlidersHorizontal,
 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { PricingKPICard } from "./PricingKPICard";
 import { RevenueChart } from "./RevenueChart";
 import { RevenueByRegion } from "./RevenueByRegion";
 import { PricingRulesTable, type PricingRule } from "./PricingRulesTable";
-import { SeasonalRulesCalendar, type SeasonalEvent } from "./SeasonalRulesCalendar";
 import { PromoCodesPanel, type PromoCode } from "./PromoCodesPanel";
 import { CommissionPanel, type Commission } from "./CommissionPanel";
 import { TopPerformingPackages, type TopPackage } from "./TopPerformingPackages";
+import PricingRuleCreateDrawer from "./PricingRuleCreateDrawer";
+import PricingRuleEditDrawer from "./PricingRuleEditDrawer";
+import PromoCodeCreateDrawer from "./PromoCodeCreateDrawer";
+import PromoCodeEditDrawer from "./PromoCodeEditDrawer";
+import AgentCreateDrawer from "./AgentCreateDrawer";
+import AgentEditDrawer from "./AgentEditDrawer";
+import AgentDetailModal from "./AgentDetailModal";
+import {
+  useAgentsQuery,
+  deleteAgent,
+  deletePromoCode,
+  pricingKeys,
+  usePricingRulesQuery,
+  usePromoCodesQuery,
+  usePendingCommissionsQuery,
+  useRevenueSummaryQuery,
+  useRevenueByPackageQuery,
+  useRevenueByRegionQuery,
+} from "@/lib/api/pricing";
+import { usePricing } from "@/context/PricingContext";
+import { useTheme } from "@/context/ThemeContext";
 
-const revenueData = [
-  { month: "Jan", mediterranean: 45, caribbean: 38, pacific: 25, indianOcean: 18 },
-  { month: "Feb", mediterranean: 52, caribbean: 42, pacific: 28, indianOcean: 22 },
-  { month: "Mar", mediterranean: 61, caribbean: 48, pacific: 35, indianOcean: 26 },
-  { month: "Apr", mediterranean: 68, caribbean: 55, pacific: 42, indianOcean: 30 },
-  { month: "May", mediterranean: 75, caribbean: 62, pacific: 48, indianOcean: 35 },
-  { month: "Jun", mediterranean: 88, caribbean: 72, pacific: 58, indianOcean: 42 },
-  { month: "Jul", mediterranean: 95, caribbean: 82, pacific: 65, indianOcean: 48 },
-  { month: "Aug", mediterranean: 92, caribbean: 78, pacific: 62, indianOcean: 45 },
-  { month: "Sep", mediterranean: 78, caribbean: 65, pacific: 52, indianOcean: 38 },
-  { month: "Oct", mediterranean: 65, caribbean: 52, pacific: 42, indianOcean: 32 },
-  { month: "Nov", mediterranean: 58, caribbean: 45, pacific: 35, indianOcean: 28 },
-  { month: "Dec", mediterranean: 72, caribbean: 58, pacific: 45, indianOcean: 35 },
-];
+const REGION_FLAGS: Record<string, string> = {
+  mediterranean: "🇬🇷",
+  caribbean: "🇧🇸",
+  pacific: "🇵🇫",
+  "indian ocean": "🇲🇻",
+};
 
-const regionRevenue = [
-  { name: "Mediterranean", flag: "🇬🇷", revenue: 849000, bookings: 324, percentage: 42 },
-  { name: "Caribbean", flag: "🇧🇸", revenue: 697000, bookings: 278, percentage: 34 },
-  { name: "Pacific", flag: "🇵🇫", revenue: 487000, bookings: 198, percentage: 24 },
-  { name: "Indian Ocean", flag: "🇲🇻", revenue: 399000, bookings: 156, percentage: 20 },
-];
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: value >= 1000000 ? 1 : 0,
+  }).format(value);
 
-const pricingRules: PricingRule[] = [
-  {
-    id: "PR-001",
-    name: "Summer Peak Season",
-    package: "All Packages",
-    region: "Mediterranean",
-    dateRange: "Jun 1 - Sep 15",
-    multiplier: "1.5x",
-    type: "peak",
-    status: "active",
-  },
-  {
-    id: "PR-002",
-    name: "Christmas Holiday",
-    package: "Luxury Packages",
-    region: "Caribbean",
-    dateRange: "Dec 20 - Jan 5",
-    multiplier: "1.8x",
-    type: "holiday",
-    status: "active",
-  },
-  {
-    id: "PR-003",
-    name: "Last Minute Deal",
-    package: "All Packages",
-    region: "All Regions",
-    dateRange: "Within 48hrs",
-    multiplier: "0.8x",
-    type: "lastminute",
-    status: "active",
-  },
-  {
-    id: "PR-004",
-    name: "Early Bird Discount",
-    package: "Weekly Charters",
-    region: "Pacific",
-    dateRange: "90+ days",
-    multiplier: "0.85x",
-    type: "discount",
-    status: "active",
-  },
-  {
-    id: "PR-005",
-    name: "Spring Break",
-    package: "All Packages",
-    region: "Caribbean",
-    dateRange: "Mar 10 - Apr 10",
-    multiplier: "1.4x",
-    type: "peak",
-    status: "inactive",
-  },
-];
+const formatCompactCurrency = (value: number) =>
+  new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(value);
 
-const seasonalEvents: SeasonalEvent[] = [
-  { startDay: 1, endDay: 8, type: "holiday", month: 0 },
-  { startDay: 14, endDay: 14, type: "holiday", month: 0 },
-  { startDay: 10, endDay: 24, type: "peak", month: 1 },
-  { startDay: 1, endDay: 15, type: "peak", month: 2 },
-  { startDay: 25, endDay: 28, type: "lastminute", month: 2 },
-];
-
-const promoCodes: PromoCode[] = [
-  {
-    id: "PC-001",
-    code: "SUMMER2026",
-    discountType: "percentage",
-    value: 15,
-    usageCount: 42,
-    expiryDate: "Aug 31, 2026",
-    status: "active",
-  },
-  {
-    id: "PC-002",
-    code: "FIRST100",
-    discountType: "fixed",
-    value: 100,
-    usageCount: 87,
-    expiryDate: "Dec 31, 2026",
-    status: "active",
-  },
-  {
-    id: "PC-003",
-    code: "LUXURY20",
-    discountType: "percentage",
-    value: 20,
-    usageCount: 28,
-    expiryDate: "Jul 15, 2026",
-    status: "active",
-  },
-  {
-    id: "PC-004",
-    code: "WEEKEND50",
-    discountType: "fixed",
-    value: 50,
-    usageCount: 156,
-    expiryDate: "Jun 30, 2026",
-    status: "active",
-  },
-  {
-    id: "PC-005",
-    code: "SPRING15",
-    discountType: "percentage",
-    value: 15,
-    usageCount: 64,
-    expiryDate: "Feb 10, 2026",
-    status: "expired",
-  },
-];
-
-const commissions: Commission[] = [
-  {
-    id: "CM-001",
-    agentName: "Elite Yacht Partners",
-    region: "Mediterranean",
-    commissionRate: 12,
-    bookingsThisMonth: 18,
-    totalEarned: 24500,
-    payoutStatus: "pending",
-  },
-  {
-    id: "CM-002",
-    agentName: "Caribbean Charters Co.",
-    region: "Caribbean",
-    commissionRate: 10,
-    bookingsThisMonth: 15,
-    totalEarned: 19800,
-    payoutStatus: "paid",
-  },
-  {
-    id: "CM-003",
-    agentName: "Pacific Adventures",
-    region: "Pacific",
-    commissionRate: 11,
-    bookingsThisMonth: 12,
-    totalEarned: 16200,
-    payoutStatus: "pending",
-  },
-  {
-    id: "CM-004",
-    agentName: "Luxury Voyage Agency",
-    region: "All Regions",
-    commissionRate: 15,
-    bookingsThisMonth: 22,
-    totalEarned: 35600,
-    payoutStatus: "paid",
-  },
-  {
-    id: "CM-005",
-    agentName: "Ocean Dreams Network",
-    region: "Indian Ocean",
-    commissionRate: 9,
-    bookingsThisMonth: 8,
-    totalEarned: 10400,
-    payoutStatus: "pending",
-  },
-];
+const formatDateOnly = (value?: string | null) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleDateString();
+};
 
 const topPackages: TopPackage[] = [
   {
@@ -301,8 +177,213 @@ const topPackages: TopPackage[] = [
 ];
 
 export default function PricingRevenue() {
+  const { colors } = useTheme();
+  const queryClient = useQueryClient();
+  const { isCreateRuleOpen, setIsCreateRuleOpen } = usePricing();
+  const [timeFilter, setTimeFilter] = useState("1Y");
+  const [editRuleId, setEditRuleId] = useState<string | null>(null);
+  const [isCreatePromoOpen, setIsCreatePromoOpen] = useState(false);
+  const [editPromoId, setEditPromoId] = useState<string | null>(null);
+  const [isCreateAgentOpen, setIsCreateAgentOpen] = useState(false);
+  const [viewAgentId, setViewAgentId] = useState<string | null>(null);
+  const [editAgentId, setEditAgentId] = useState<string | null>(null);
+  const [pendingPromoDelete, setPendingPromoDelete] = useState<PromoCode | null>(null);
+  const [pendingAgentDelete, setPendingAgentDelete] = useState<Commission | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [pricingRuleSearch, setPricingRuleSearch] = useState("");
+  const [promoSearch, setPromoSearch] = useState("");
+  const [agentSearch, setAgentSearch] = useState("");
+
+  const monthRange = useMemo(() => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), 1);
+    const format = (value: Date) => value.toISOString().slice(0, 10);
+    return { from: format(start), to: format(now) };
+  }, []);
+
+  const { from, to } = useMemo(() => {
+    const end = new Date();
+    const start = new Date(end);
+    const monthsBack = timeFilter === "1M" ? 1 : timeFilter === "3M" ? 3 : timeFilter === "6M" ? 6 : 12;
+    start.setMonth(start.getMonth() - monthsBack);
+    const format = (value: Date) => value.toISOString().slice(0, 10);
+    return { from: format(start), to: format(end) };
+  }, [timeFilter]);
+
+  const {
+    data: revenueByRegionData,
+    isLoading: isRevenueByRegionLoading,
+    isError: isRevenueByRegionError,
+    error: revenueByRegionError,
+  } = useRevenueByRegionQuery({ from, to });
+
+  const { data: revenueSummaryData } = useRevenueSummaryQuery();
+  const { data: revenueSummaryMonth } = useRevenueSummaryQuery(monthRange);
+  const { data: pendingCommissionsData } = usePendingCommissionsQuery();
+  const { data: revenueByPackageData } = useRevenueByPackageQuery({ from, to });
+  const { data: pricingRulesData } = usePricingRulesQuery({ page: 1, limit: 50 });
+  const { data: promoCodesData } = usePromoCodesQuery({ page: 1, limit: 1, isActive: true });
+  const { data: agentsData } = useAgentsQuery({ page: 1, limit: 50 });
+
+  const regionSummary = revenueByRegionData?.byRegion ?? [];
+  const regionTotalRevenue = regionSummary.reduce((sum, item) => sum + Number(item.totalRevenue || 0), 0);
+
+  const regionRevenue = useMemo(() => {
+    return [...regionSummary]
+      .sort((a, b) => Number(b.totalRevenue || 0) - Number(a.totalRevenue || 0))
+      .map((item) => {
+        const name = item.region?.name || "Unknown";
+        const slug = name.toLowerCase();
+        const percentage = regionTotalRevenue
+          ? Math.round((Number(item.totalRevenue || 0) / regionTotalRevenue) * 100)
+          : 0;
+        return {
+          name,
+          flag: REGION_FLAGS[slug] || "🌍",
+          revenue: Number(item.totalRevenue || 0),
+          bookings: Number(item.bookingCount || 0),
+          percentage,
+        };
+      });
+  }, [regionSummary, regionTotalRevenue]);
+
+  const revenueChartData = useMemo(() => {
+    const base = {
+      month: timeFilter,
+      mediterranean: 0,
+      caribbean: 0,
+      pacific: 0,
+      indianOcean: 0,
+    };
+    regionSummary.forEach((item) => {
+      const name = (item.region?.name || "").toLowerCase();
+      const value = Number(item.totalRevenue || 0) / 1000;
+      if (name === "mediterranean") base.mediterranean = value;
+      if (name === "caribbean") base.caribbean = value;
+      if (name === "pacific") base.pacific = value;
+      if (name === "indian ocean") base.indianOcean = value;
+    });
+    return [base];
+  }, [regionSummary, timeFilter]);
+
+  const pricingRules = useMemo<PricingRule[]>(() => {
+    const rules = pricingRulesData?.rules ?? [];
+    return rules.map((rule) => {
+      const start = formatDateOnly(rule.startDate);
+      const end = formatDateOnly(rule.endDate);
+      const dateRange = start === end ? start : `${start} - ${end}`;
+      const multiplierValue = rule.multiplier != null ? Number(rule.multiplier) : null;
+      const adjustmentValue = rule.fixedAdjustment != null ? Number(rule.fixedAdjustment) : null;
+      const multiplierLabel =
+        multiplierValue != null && !Number.isNaN(multiplierValue)
+          ? `${multiplierValue}x`
+          : adjustmentValue != null && !Number.isNaN(adjustmentValue)
+            ? `${adjustmentValue >= 0 ? "+" : ""}$${Math.abs(adjustmentValue)}`
+            : "—";
+      const mappedType =
+        rule.ruleType === "peak"
+          ? "peak"
+          : rule.ruleType === "holiday"
+            ? "holiday"
+            : rule.ruleType === "last_minute"
+              ? "lastminute"
+              : "discount";
+      return {
+        id: rule.id,
+        name: rule.name,
+        package: rule.package?.name || "All Packages",
+        region: rule.region?.name || "All Regions",
+        dateRange,
+        multiplier: multiplierLabel,
+        type: mappedType,
+        status: rule.isActive ? "active" : "inactive",
+      };
+    });
+  }, [pricingRulesData?.rules]);
+
+  const filteredPricingRules = useMemo(() => {
+    const query = pricingRuleSearch.trim().toLowerCase();
+    if (!query) return pricingRules;
+    return pricingRules.filter((rule) => {
+      const haystack = `${rule.name} ${rule.package} ${rule.region} ${rule.type}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [pricingRuleSearch, pricingRules]);
+
+  const promoCodes = useMemo<PromoCode[]>(() => {
+    const promos = promoCodesData?.promoCodes ?? [];
+    return promos.map((promo) => {
+      const validUntil = new Date(promo.validUntil);
+      const isExpired = Number.isNaN(validUntil.getTime()) ? false : validUntil < new Date();
+      return {
+        id: promo.id,
+        code: promo.code,
+        discountType: promo.discountType,
+        value: Number(promo.discountValue),
+        usageCount: promo.usesCount,
+        expiryDate: formatDateOnly(promo.validUntil),
+        status: promo.isActive && !isExpired ? "active" : "expired",
+      };
+    });
+  }, [promoCodesData?.promoCodes]);
+
+  const filteredPromoCodes = useMemo(() => {
+    const query = promoSearch.trim().toLowerCase();
+    if (!query) return promoCodes;
+    return promoCodes.filter((promo) => {
+      const haystack = `${promo.code} ${promo.discountType}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [promoCodes, promoSearch]);
+
+  const commissions = useMemo<Commission[]>(() => {
+    const agents = agentsData?.agents ?? [];
+    return agents.map((agent) => ({
+      id: agent.id,
+      agentName: agent.name,
+      region: agent.region?.name || "All Regions",
+      commissionRate: Math.round(Number(agent.commissionRate) * 100),
+      bookingsThisMonth: 0,
+      totalEarned: 0,
+      payoutStatus: "pending",
+    }));
+  }, [agentsData?.agents]);
+
+  const filteredCommissions = useMemo(() => {
+    const query = agentSearch.trim().toLowerCase();
+    if (!query) return commissions;
+    return commissions.filter((agent) => {
+      const haystack = `${agent.agentName} ${agent.region}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [agentSearch, commissions]);
+
+  const totalRevenue = Number(revenueSummaryData?.summary.totalRevenue || 0);
+  const bookingCount = Number(revenueSummaryData?.summary.bookingCount || 0);
+  const avgBookingValue = bookingCount > 0 ? totalRevenue / bookingCount : 0;
+  const revenueThisMonth = Number(revenueSummaryMonth?.summary.totalRevenue || 0);
+  const activePromoCodes = promoCodesData?.total ?? 0;
+  const pendingCommissions = Number(pendingCommissionsData?.summary.totalPending || 0);
+
+  const topPackages = useMemo<TopPackage[]>(() => {
+    const packages = revenueByPackageData?.byPackage ?? [];
+    return [...packages]
+      .sort((a, b) => Number(b.totalRevenue || 0) - Number(a.totalRevenue || 0))
+      .map((item, index) => {
+        const totalRevenue = Number(item.totalRevenue || 0);
+        const totalBookings = Number(item.bookingCount || 0);
+        return {
+          rank: index + 1,
+          name: item.package?.name || "Unknown Package",
+          totalBookings,
+          totalRevenue,
+          avgBookingValue: totalBookings > 0 ? totalRevenue / totalBookings : 0,
+        };
+      });
+  }, [revenueByPackageData?.byPackage]);
+
   const handleEditRule = (rule: PricingRule) => {
-    console.log("Edit rule:", rule.id);
+    setEditRuleId(rule.id);
   };
 
   const handleDeleteRule = (rule: PricingRule) => {
@@ -314,27 +395,70 @@ export default function PricingRevenue() {
   };
 
   const handleCopyPromo = (promo: PromoCode) => {
-    console.log("Copy promo code:", promo.code);
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard
+        .writeText(promo.code)
+        .then(() => {
+          toast.success("Promo code copied.");
+        })
+        .catch(() => {
+          toast.error("Failed to copy promo code.");
+        });
+    } else {
+      toast.error("Clipboard access unavailable.");
+    }
   };
 
-  const handleDeactivatePromo = (promo: PromoCode) => {
-    console.log("Deactivate promo:", promo.id);
+  const handleEditPromo = (promo: PromoCode) => {
+    setEditPromoId(promo.id);
+  };
+
+  const handleDeletePromo = (promo: PromoCode) => {
+    setPendingPromoDelete(promo);
   };
 
   const handleCreatePromo = () => {
-    console.log("Create new promo code");
+    setIsCreatePromoOpen(true);
   };
 
   const handleViewCommission = (commission: Commission) => {
-    console.log("View commission:", commission.id);
+    setViewAgentId(commission.id);
   };
 
   const handleEditCommission = (commission: Commission) => {
-    console.log("Edit commission:", commission.id);
+    setEditAgentId(commission.id);
+  };
+
+  const handleDeleteCommission = (commission: Commission) => {
+    setPendingAgentDelete(commission);
   };
 
   const handleAddAgent = () => {
-    console.log("Add new agent");
+    setIsCreateAgentOpen(true);
+  };
+
+  const confirmDeletePromo = async () => {
+    if (!pendingPromoDelete) return;
+    setIsDeleting(true);
+    try {
+      await deletePromoCode(pendingPromoDelete.id);
+      await queryClient.invalidateQueries({ queryKey: pricingKeys.promoCodes() });
+    } finally {
+      setIsDeleting(false);
+      setPendingPromoDelete(null);
+    }
+  };
+
+  const confirmDeleteAgent = async () => {
+    if (!pendingAgentDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteAgent(pendingAgentDelete.id);
+      await queryClient.invalidateQueries({ queryKey: pricingKeys.agents() });
+    } finally {
+      setIsDeleting(false);
+      setPendingAgentDelete(null);
+    }
   };
 
   return (
@@ -344,8 +468,8 @@ export default function PricingRevenue() {
         <PricingKPICard
           icon={DollarSign}
           label="Total Revenue"
-          value="$2.4M"
-          change={18}
+          value={formatCompactCurrency(totalRevenue)}
+          change={0}
           sparklineData={[
             { value: 145 },
             { value: 162 },
@@ -362,8 +486,8 @@ export default function PricingRevenue() {
         <PricingKPICard
           icon={TrendingUp}
           label="Revenue This Month"
-          value="$342k"
-          change={12}
+          value={formatCompactCurrency(revenueThisMonth)}
+          change={0}
           sparklineData={[
             { value: 25 },
             { value: 32 },
@@ -380,8 +504,8 @@ export default function PricingRevenue() {
         <PricingKPICard
           icon={CreditCard}
           label="Avg. Booking Value"
-          value="$4.8k"
-          change={8}
+          value={formatCompactCurrency(avgBookingValue)}
+          change={0}
           sparklineData={[
             { value: 3800 },
             { value: 4100 },
@@ -398,8 +522,8 @@ export default function PricingRevenue() {
         <PricingKPICard
           icon={Tag}
           label="Active Promo Codes"
-          value="4"
-          change={-2}
+          value={String(activePromoCodes)}
+          change={0}
           sparklineData={[
             { value: 8 },
             { value: 7 },
@@ -416,8 +540,8 @@ export default function PricingRevenue() {
         <PricingKPICard
           icon={Wallet}
           label="Pending Commissions"
-          value="$51.1k"
-          change={15}
+          value={formatCurrency(pendingCommissions)}
+          change={0}
           sparklineData={[
             { value: 28 },
             { value: 32 },
@@ -435,39 +559,306 @@ export default function PricingRevenue() {
 
       {/* Row 2 - Revenue Chart + Revenue by Region */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] xl:grid-cols-[1fr_460px] gap-4 md:gap-6 mb-6 md:mb-8">
-        <RevenueChart data={revenueData} />
+        <RevenueChart
+          data={revenueChartData}
+          timeFilter={timeFilter}
+          onTimeFilterChange={setTimeFilter}
+          isLoading={isRevenueByRegionLoading}
+          errorMessage={
+            isRevenueByRegionError
+              ? revenueByRegionError instanceof Error
+                ? revenueByRegionError.message
+                : "Failed to load revenue data."
+              : undefined
+          }
+        />
         <RevenueByRegion regions={regionRevenue} />
       </div>
 
-      {/* Row 3 - Pricing Rules Table + Seasonal Calendar */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_460px] xl:grid-cols-[1fr_560px] gap-4 md:gap-6 mb-6 md:mb-8">
+      {/* Row 3 - Pricing Rules Table */}
+      <div className="grid grid-cols-1 gap-4 md:gap-6 mb-6 md:mb-8">
+        <div
+          className="rounded-xl p-4 md:p-6 border backdrop-blur-sm"
+          style={{
+            backgroundColor: colors.cardBg,
+            borderColor: colors.cardBorder,
+          }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <SlidersHorizontal className="w-5 h-5" style={{ color: colors.accent }} />
+            <h3 className="text-base md:text-lg font-bold" style={{ color: colors.textPrimary }}>
+              Quick Filters
+            </h3>
+          </div>
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="min-w-[220px] flex-1">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide mb-2 block"
+                style={{ color: colors.textSecondary }}
+              >
+                Search Pricing Rules
+              </label>
+              <div className="relative">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                  style={{ color: colors.textSecondary }}
+                  aria-hidden
+                />
+                <input
+                  type="text"
+                  value={pricingRuleSearch}
+                  onChange={(e) => setPricingRuleSearch(e.target.value)}
+                  placeholder="Search by name, package, region..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2"
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = `${colors.accent}50`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.cardBorder;
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
         <PricingRulesTable
-          rules={pricingRules}
+          rules={filteredPricingRules}
           onEdit={handleEditRule}
           onDelete={handleDeleteRule}
           onToggleStatus={handleToggleRuleStatus}
         />
-        <SeasonalRulesCalendar events={seasonalEvents} />
       </div>
 
       {/* Row 4 - Promo Codes + Commission Management */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
+      <div className="grid grid-cols-1 gap-4 md:gap-6 mb-6 md:mb-8">
+        <div
+          className="rounded-xl p-4 md:p-6 border backdrop-blur-sm"
+          style={{
+            backgroundColor: colors.cardBg,
+            borderColor: colors.cardBorder,
+          }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <SlidersHorizontal className="w-5 h-5" style={{ color: colors.accent }} />
+            <h3 className="text-base md:text-lg font-bold" style={{ color: colors.textPrimary }}>
+              Quick Filters
+            </h3>
+          </div>
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="min-w-[220px] flex-1">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide mb-2 block"
+                style={{ color: colors.textSecondary }}
+              >
+                Search Promo Codes
+              </label>
+              <div className="relative">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                  style={{ color: colors.textSecondary }}
+                  aria-hidden
+                />
+                <input
+                  type="text"
+                  value={promoSearch}
+                  onChange={(e) => setPromoSearch(e.target.value)}
+                  placeholder="Search by code..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2"
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = `${colors.accent}50`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.cardBorder;
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
         <PromoCodesPanel
-          promoCodes={promoCodes}
+          promoCodes={filteredPromoCodes}
           onCopy={handleCopyPromo}
-          onDeactivate={handleDeactivatePromo}
+          onEdit={handleEditPromo}
+          onDelete={handleDeletePromo}
           onCreate={handleCreatePromo}
         />
+        <div
+          className="rounded-xl p-4 md:p-6 border backdrop-blur-sm"
+          style={{
+            backgroundColor: colors.cardBg,
+            borderColor: colors.cardBorder,
+          }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <SlidersHorizontal className="w-5 h-5" style={{ color: colors.accent }} />
+            <h3 className="text-base md:text-lg font-bold" style={{ color: colors.textPrimary }}>
+              Quick Filters
+            </h3>
+          </div>
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="min-w-[220px] flex-1">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide mb-2 block"
+                style={{ color: colors.textSecondary }}
+              >
+                Search Agents
+              </label>
+              <div className="relative">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                  style={{ color: colors.textSecondary }}
+                  aria-hidden
+                />
+                <input
+                  type="text"
+                  value={agentSearch}
+                  onChange={(e) => setAgentSearch(e.target.value)}
+                  placeholder="Search by agent name..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2"
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = `${colors.accent}50`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.cardBorder;
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
         <CommissionPanel
-          commissions={commissions}
+          commissions={filteredCommissions}
           onView={handleViewCommission}
           onEdit={handleEditCommission}
+          onDelete={handleDeleteCommission}
           onAddAgent={handleAddAgent}
         />
       </div>
 
       {/* Row 5 - Top Performing Packages */}
       <TopPerformingPackages packages={topPackages} />
+      <PricingRuleCreateDrawer
+        isOpen={isCreateRuleOpen}
+        onClose={() => setIsCreateRuleOpen(false)}
+      />
+      <PricingRuleEditDrawer
+        ruleId={editRuleId}
+        isOpen={!!editRuleId}
+        onClose={() => setEditRuleId(null)}
+      />
+      <PromoCodeCreateDrawer
+        isOpen={isCreatePromoOpen}
+        onClose={() => setIsCreatePromoOpen(false)}
+      />
+      <PromoCodeEditDrawer
+        promoId={editPromoId}
+        isOpen={!!editPromoId}
+        onClose={() => setEditPromoId(null)}
+      />
+      <AgentCreateDrawer
+        isOpen={isCreateAgentOpen}
+        onClose={() => setIsCreateAgentOpen(false)}
+      />
+      <AgentEditDrawer
+        agentId={editAgentId}
+        isOpen={!!editAgentId}
+        onClose={() => setEditAgentId(null)}
+      />
+      <AgentDetailModal
+        agentId={viewAgentId}
+        isOpen={!!viewAgentId}
+        onClose={() => setViewAgentId(null)}
+      />
+      {pendingPromoDelete && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border p-6"
+            style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder }}
+          >
+            <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>
+              Delete promo code?
+            </h3>
+            <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
+              This will permanently delete "{pendingPromoDelete.code}".
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingPromoDelete(null)}
+                className="px-4 py-2 rounded-lg border text-sm"
+                style={{ borderColor: colors.cardBorder, color: colors.textPrimary }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeletePromo}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ backgroundColor: colors.danger }}
+              >
+                {isDeleting ? "Deleting..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {pendingAgentDelete && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border p-6"
+            style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder }}
+          >
+            <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>
+              Delete agent?
+            </h3>
+            <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
+              This will permanently delete "{pendingAgentDelete.agentName}".
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingAgentDelete(null)}
+                className="px-4 py-2 rounded-lg border text-sm"
+                style={{ borderColor: colors.cardBorder, color: colors.textPrimary }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteAgent}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ backgroundColor: colors.danger }}
+              >
+                {isDeleting ? "Deleting..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 }

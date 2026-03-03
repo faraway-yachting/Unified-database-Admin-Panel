@@ -28,7 +28,7 @@ interface BookingsContextValue {
 const defaultValue: BookingsContextValue = {
   selectedStatus: "All",
   setSelectedStatus: () => {},
-  selectedRegion: "All Regions",
+  selectedRegion: "",
   setSelectedRegion: () => {},
   isCreateOpen: false,
   setIsCreateOpen: () => {},
@@ -38,7 +38,7 @@ const BookingsContext = createContext<BookingsContextValue>(defaultValue);
 
 export function BookingsProvider({ children }: { children: ReactNode }) {
   const [selectedStatus, setSelectedStatus] = useState<BookingStatusFilter>("All");
-  const [selectedRegion, setSelectedRegion] = useState("All Regions");
+  const [selectedRegion, setSelectedRegion] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   const value: BookingsContextValue = {

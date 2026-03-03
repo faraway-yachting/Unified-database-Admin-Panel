@@ -16,7 +16,6 @@ export interface RegionPerformanceItem {
   name: string;
   revenue: number;
   bookings: number;
-  occupancy: number;
   color: string;
 }
 
@@ -26,9 +25,7 @@ interface RegionPerformanceProps {
 
 export function RegionPerformance({ regions }: RegionPerformanceProps) {
   const { colors } = useTheme();
-  const [metric, setMetric] = useState<"revenue" | "bookings" | "occupancy">(
-    "revenue"
-  );
+  const [metric, setMetric] = useState<"revenue" | "bookings">("revenue");
 
   const metrics = [
     {
@@ -40,11 +37,6 @@ export function RegionPerformance({ regions }: RegionPerformanceProps) {
       id: "bookings" as const,
       label: "Bookings",
       format: (val: number) => val.toString(),
-    },
-    {
-      id: "occupancy" as const,
-      label: "Occupancy Rate",
-      format: (val: number) => `${val}%`,
     },
   ];
 

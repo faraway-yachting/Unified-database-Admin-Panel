@@ -29,6 +29,7 @@ export const config = {
     regions: {
       list: url('/api/regions'),
       create: url('/api/regions'),
+      performance: url('/api/regions/performance'),
       byId: (id: string) => url(`/api/regions/${id}`),
       update: (id: string) => url(`/api/regions/${id}`),
       delete: (id: string) => url(`/api/regions/${id}`),
@@ -166,6 +167,9 @@ export const config = {
         byRegion: url('/api/pricing/revenue/by-region'),
         byPackage: url('/api/pricing/revenue/by-package'),
         export: url('/api/pricing/revenue/export'),
+      },
+      commissions: {
+        pending: url('/api/pricing/commissions/pending'),
       },
     },
     crm: {

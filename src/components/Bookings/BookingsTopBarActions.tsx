@@ -13,45 +13,12 @@ const STATUS_TABS: BookingStatusFilter[] = [
   "Cancelled",
 ];
 
-const REGIONS = [
-  "All Regions",
-  "Mediterranean",
-  "Caribbean",
-  "Pacific",
-  "Indian Ocean",
-];
-
 export function BookingsTopBarActions() {
   const { colors } = useTheme();
-  const { selectedStatus, setSelectedStatus, selectedRegion, setSelectedRegion, setIsCreateOpen } =
-    useBookings();
+  const { selectedStatus, setSelectedStatus, setIsCreateOpen } = useBookings();
 
   return (
     <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 overflow-x-auto">
-      <div className="relative hidden sm:block">
-        <select
-          value={selectedRegion}
-          onChange={(e) => setSelectedRegion(e.target.value)}
-          className="px-3 md:px-4 py-2 rounded-lg border text-xs md:text-sm transition-all cursor-pointer appearance-none pr-8 md:pr-10 focus:outline-none focus:ring-2"
-          style={{
-            backgroundColor: colors.background,
-            borderColor: colors.cardBorder,
-            color: colors.textPrimary,
-          }}
-        >
-          {REGIONS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-        <ChevronDown
-          className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 w-3 h-3 md:w-4 md:h-4 pointer-events-none"
-          style={{ color: colors.textSecondary }}
-          aria-hidden
-        />
-      </div>
-
       <div className="hidden lg:flex items-center gap-1 p-1 rounded-lg" style={{ backgroundColor: colors.background }}>
         {STATUS_TABS.map((status) => (
           <button

@@ -2,82 +2,19 @@
 
 import { useState } from "react";
 import { Globe, MapPin, Package, Ship } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { RegionKPICard } from "./RegionKPICard";
 import { WorldMap, type RegionLocation } from "./WorldMap";
 import { RegionsList, type Region } from "./RegionsList";
 import { RegionDetailPanel } from "./RegionDetailPanel";
-import { RegionPerformance, type RegionPerformanceItem } from "./RegionPerformance";
+import { RegionPerformance } from "./RegionPerformance";
 import { ActivityLog, type Activity } from "./ActivityLog";
 import { useTheme } from "@/context/ThemeContext";
-
-const regionsData: Region[] = [
-  {
-    id: "REG-001",
-    city: "Dubai",
-    country: "UAE",
-    flag: "🇦🇪",
-    siteUrl: "/dubai",
-    status: "live",
-    packages: 12,
-    yachts: 18,
-    lastUpdated: "Feb 18, 2026",
-  },
-  {
-    id: "REG-002",
-    city: "Athens",
-    country: "Greece",
-    flag: "🇬🇷",
-    siteUrl: "/athens",
-    status: "live",
-    packages: 15,
-    yachts: 22,
-    lastUpdated: "Feb 17, 2026",
-  },
-  {
-    id: "REG-003",
-    city: "Barcelona",
-    country: "Spain",
-    flag: "🇪🇸",
-    siteUrl: "/barcelona",
-    status: "live",
-    packages: 18,
-    yachts: 24,
-    lastUpdated: "Feb 19, 2026",
-  },
-  {
-    id: "REG-004",
-    city: "Miami",
-    country: "USA",
-    flag: "🇺🇸",
-    siteUrl: "/miami",
-    status: "live",
-    packages: 14,
-    yachts: 20,
-    lastUpdated: "Feb 16, 2026",
-  },
-  {
-    id: "REG-005",
-    city: "Monaco",
-    country: "Monaco",
-    flag: "🇲🇨",
-    siteUrl: "/monaco",
-    status: "draft",
-    packages: 8,
-    yachts: 12,
-    lastUpdated: "Feb 15, 2026",
-  },
-  {
-    id: "REG-006",
-    city: "Maldives",
-    country: "Maldives",
-    flag: "🇲🇻",
-    siteUrl: "/maldives",
-    status: "live",
-    packages: 10,
-    yachts: 15,
-    lastUpdated: "Feb 14, 2026",
-  },
-];
+import {
+  deleteRegion,
+  useRegionPerformanceQuery,
+  useRegionsListQuery,
+} from "@/lib/api/regions";
 
 const locationsData: RegionLocation[] = [
   {
@@ -139,51 +76,6 @@ const locationsData: RegionLocation[] = [
     packages: 10,
     yachts: 15,
     status: "live",
-  },
-];
-
-const performanceData: RegionPerformanceItem[] = [
-  {
-    name: "Barcelona",
-    revenue: 245000,
-    bookings: 156,
-    occupancy: 87,
-    color: "#00C9B1",
-  },
-  {
-    name: "Athens",
-    revenue: 198000,
-    bookings: 134,
-    occupancy: 82,
-    color: "#F4A924",
-  },
-  {
-    name: "Miami",
-    revenue: 186000,
-    bookings: 128,
-    occupancy: 79,
-    color: "#8B5CF6",
-  },
-  {
-    name: "Dubai",
-    revenue: 172000,
-    bookings: 115,
-    occupancy: 75,
-    color: "#10B981",
-  },
-  {
-    name: "Maldives",
-    revenue: 145000,
-    bookings: 98,
-    occupancy: 71,
-    color: "#3B82F6",
-  },
-  {
-    name: "Monaco",
-    revenue: 89000,
-    bookings: 62,
-    occupancy: 45,
-    color: "#6B7280",
   },
 ];
 
@@ -259,23 +151,96 @@ export default function RegionManagement() {
   const { colors } = useTheme();
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [showDetailPanel, setShowDetailPanel] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<Region | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: regionsListData } = useRegionsListQuery();
+  const { data: performanceData } = useRegionPerformanceQuery();
+
+  const regions = (regionsListData?.regions ?? []).map((region) => ({
+    id: region.id,
+    city: region.name,
+    country: region.country ?? "—",
+    flag: "🌍",
+    siteUrl: region.siteUrl || `/${region.slug ?? ""}`,
+    status: (region.status as Region["status"]) ?? "draft",
+    packages: 0,
+    yachts: 0,
+    lastUpdated: region.updatedAt ? new Date(region.updatedAt).toLocaleDateString() : "—",
+  }));
+
+  const locationLookup = new Map(
+    locationsData.map((location) => [location.city.toLowerCase(), location])
+  );
+  const mapLocations = regions
+    .map((region) => {
+      const match = locationLookup.get(region.city.toLowerCase());
+      if (!match) return null;
+      return {
+        ...match,
+        id: region.id,
+        city: region.city,
+        country: region.country,
+        status: region.status,
+      };
+    })
+    .filter((item): item is RegionLocation => item !== null);
 
   const handleRegionSelect = (regionId: string) => {
     setSelectedRegion(regionId);
     setShowDetailPanel(true);
   };
 
-  const handleManage = (region: Region) => {
+  const handleView = (region: Region) => {
     setSelectedRegion(region.id);
     setShowDetailPanel(true);
   };
 
-  const selectedRegionData = regionsData.find((r) => r.id === selectedRegion);
+  const handleDelete = (region: Region) => {
+    setPendingDelete(region);
+  };
 
-  const totalRegions = regionsData.length;
-  const activeSites = regionsData.filter((r) => r.status === "live").length;
-  const totalPackages = regionsData.reduce((sum, r) => sum + r.packages, 0);
-  const totalFleet = regionsData.reduce((sum, r) => sum + r.yachts, 0);
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteRegion(pendingDelete.id);
+      await queryClient.invalidateQueries({ queryKey: ["regions"] });
+      if (selectedRegion === pendingDelete.id) {
+        setSelectedRegion(null);
+        setShowDetailPanel(false);
+      }
+    } finally {
+      setIsDeleting(false);
+      setPendingDelete(null);
+    }
+  };
+
+  const selectedRegionData = regions.find((r) => r.id === selectedRegion);
+
+  const totalRegions = regions.length;
+  const activeSites = regions.filter((r) => r.status === "live").length;
+  const totalPackages = regions.reduce((sum, r) => sum + r.packages, 0);
+  const totalFleet = regions.reduce((sum, r) => sum + r.yachts, 0);
+
+  const performanceColors = [
+    colors.accent,
+    colors.accentGold,
+    "#8B5CF6",
+    "#3B82F6",
+    "#10B981",
+    "#F97316",
+    "#14B8A6",
+  ];
+
+  const performanceRegions = (performanceData?.regions ?? []).map(
+    (region, index) => ({
+      name: region.name,
+      revenue: region.revenue,
+      bookings: region.bookings,
+      color: performanceColors[index % performanceColors.length],
+    })
+  );
 
   return (
     <div className="p-4 md:p-6 lg:p-8">
@@ -315,39 +280,84 @@ export default function RegionManagement() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 mb-6 md:mb-8">
         <div className="lg:col-span-3">
           <WorldMap
-            locations={locationsData}
+            locations={mapLocations}
             selectedRegion={selectedRegion}
             onRegionSelect={handleRegionSelect}
           />
         </div>
         <div className="lg:col-span-2">
           <RegionsList
-            regions={regionsData}
+            regions={regions}
             selectedRegion={selectedRegion}
             onSelectRegion={handleRegionSelect}
-            onManage={handleManage}
-            onPreview={(region) => console.log("Preview", region)}
-            onSettings={(region) => handleManage(region)}
+            onPreview={(region) => {
+              if (region.siteUrl) window.open(region.siteUrl, "_blank", "noopener,noreferrer");
+            }}
+            onView={handleView}
+            onDelete={handleDelete}
           />
         </div>
       </div>
 
       {/* Row 3 - Region Detail Panel */}
       {showDetailPanel && selectedRegionData && (
-        <div className="mb-6 md:mb-8">
-          <RegionDetailPanel
-            region={selectedRegionData}
-            onClose={() => {
-              setShowDetailPanel(false);
-              setSelectedRegion(null);
-            }}
-          />
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+        >
+          <div className="w-full max-w-5xl">
+            <RegionDetailPanel
+              region={selectedRegionData}
+              onClose={() => {
+                setShowDetailPanel(false);
+                setSelectedRegion(null);
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {pendingDelete && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border p-6"
+            style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder }}
+          >
+            <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>
+              Delete region?
+            </h3>
+            <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
+              This will permanently delete "{pendingDelete.city}".
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingDelete(null)}
+                className="px-4 py-2 rounded-lg border text-sm"
+                style={{ borderColor: colors.cardBorder, color: colors.textPrimary }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white"
+                style={{ backgroundColor: colors.danger }}
+              >
+                {isDeleting ? "Deleting..." : "Confirm"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Row 4 - Performance + Activity Log */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        <RegionPerformance regions={performanceData} />
+        <RegionPerformance regions={performanceRegions} />
         <ActivityLog activities={activitiesData} />
       </div>
     </div>

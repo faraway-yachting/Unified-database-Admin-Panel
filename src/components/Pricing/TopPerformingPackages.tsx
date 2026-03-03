@@ -1,18 +1,14 @@
 "use client";
 
 import { Medal } from "lucide-react";
-import { Line, LineChart, ResponsiveContainer } from "recharts";
 import { useTheme } from "@/context/ThemeContext";
 
 export interface TopPackage {
   rank: number;
   name: string;
-  region: string;
   totalBookings: number;
   totalRevenue: number;
   avgBookingValue: number;
-  occupancyRate: number;
-  trendData: Array<{ value: number }>;
 }
 
 interface TopPerformingPackagesProps {
@@ -65,12 +61,6 @@ export function TopPerformingPackages({ packages }: TopPerformingPackagesProps) 
                 className="text-left text-xs font-semibold uppercase tracking-wide pb-4 px-2"
                 style={{ color: colors.textSecondary }}
               >
-                Region
-              </th>
-              <th
-                className="text-left text-xs font-semibold uppercase tracking-wide pb-4 px-2"
-                style={{ color: colors.textSecondary }}
-              >
                 Bookings
               </th>
               <th
@@ -84,18 +74,6 @@ export function TopPerformingPackages({ packages }: TopPerformingPackagesProps) 
                 style={{ color: colors.textSecondary }}
               >
                 Avg. Value
-              </th>
-              <th
-                className="text-right text-xs font-semibold uppercase tracking-wide pb-4 px-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Occupancy
-              </th>
-              <th
-                className="text-right text-xs font-semibold uppercase tracking-wide pb-4 px-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Trend
               </th>
             </tr>
           </thead>
@@ -150,14 +128,6 @@ export function TopPerformingPackages({ packages }: TopPerformingPackagesProps) 
                   </td>
                   <td className="py-4 px-2">
                     <div
-                      className="text-sm"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      {pkg.region}
-                    </div>
-                  </td>
-                  <td className="py-4 px-2">
-                    <div
                       className="text-sm font-mono"
                       style={{ color: colors.textPrimary }}
                     >
@@ -178,38 +148,6 @@ export function TopPerformingPackages({ packages }: TopPerformingPackagesProps) 
                       style={{ color: colors.textPrimary }}
                     >
                       ${(pkg.avgBookingValue / 1000).toFixed(1)}k
-                    </div>
-                  </td>
-                  <td className="py-4 px-2 text-right">
-                    <div
-                      className="text-sm font-mono font-semibold"
-                      style={{
-                        color:
-                          pkg.occupancyRate >= 80
-                            ? colors.success
-                            : pkg.occupancyRate >= 60
-                              ? colors.accentGold
-                              : colors.textSecondary,
-                      }}
-                    >
-                      {pkg.occupancyRate}%
-                    </div>
-                  </td>
-                  <td className="py-4 px-2">
-                    <div className="h-8 w-24 ml-auto">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={pkg.trendData}>
-                          <Line
-                            type="monotone"
-                            dataKey="value"
-                            stroke={
-                              isTopThree ? colors.accentGold : colors.accent
-                            }
-                            strokeWidth={2}
-                            dot={false}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
                     </div>
                   </td>
                 </tr>

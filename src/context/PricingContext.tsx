@@ -13,6 +13,8 @@ interface PricingContextValue {
   setSelectedRegion: (r: string) => void;
   dateRangeLabel: string;
   setDateRangeLabel: (l: string) => void;
+  isCreateRuleOpen: boolean;
+  setIsCreateRuleOpen: (open: boolean) => void;
 }
 
 const defaultValue: PricingContextValue = {
@@ -20,6 +22,8 @@ const defaultValue: PricingContextValue = {
   setSelectedRegion: () => {},
   dateRangeLabel: "Feb 1 - Feb 28, 2026",
   setDateRangeLabel: () => {},
+  isCreateRuleOpen: false,
+  setIsCreateRuleOpen: () => {},
 };
 
 const PricingContext = createContext<PricingContextValue>(defaultValue);
@@ -27,12 +31,15 @@ const PricingContext = createContext<PricingContextValue>(defaultValue);
 export function PricingProvider({ children }: { children: ReactNode }) {
   const [selectedRegion, setSelectedRegion] = useState("All Regions");
   const [dateRangeLabel, setDateRangeLabel] = useState("Feb 1 - Feb 28, 2026");
+  const [isCreateRuleOpen, setIsCreateRuleOpen] = useState(false);
 
   const value: PricingContextValue = {
     selectedRegion,
     setSelectedRegion: useCallback((r: string) => setSelectedRegion(r), []),
     dateRangeLabel,
     setDateRangeLabel: useCallback((l: string) => setDateRangeLabel(l), []),
+    isCreateRuleOpen,
+    setIsCreateRuleOpen: useCallback((open: boolean) => setIsCreateRuleOpen(open), []),
   };
 
   return (

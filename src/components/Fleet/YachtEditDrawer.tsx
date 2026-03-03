@@ -23,6 +23,7 @@ import {
   yachtsKeys,
 } from "@/lib/api/yachts";
 import { cancelBooking, createBooking } from "@/lib/api/bookings";
+import { useCustomerSearchQuery, type CustomerSearchItem } from "@/lib/api/customers";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Yacht } from "./YachtCard";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
@@ -85,12 +86,36 @@ export function YachtEditDrawer({ yacht, onClose }: YachtEditDrawerProps) {
   const [bookingBaseAmount, setBookingBaseAmount] = useState("");
   const [bookingTotalAmount, setBookingTotalAmount] = useState("");
   const [bookingCurrencyCode, setBookingCurrencyCode] = useState("USD");
+  const [bookingCustomerSearch, setBookingCustomerSearch] = useState("");
+  const [bookingDebouncedCustomerSearch, setBookingDebouncedCustomerSearch] = useState("");
+  const [bookingSelectedCustomer, setBookingSelectedCustomer] = useState<CustomerSearchItem | null>(null);
+  const [isBookingCustomerMenuOpen, setIsBookingCustomerMenuOpen] = useState(false);
 
   useEffect(() => {
     if (detail?.region?.id) {
       setBookingRegionId(detail.region.id);
     }
   }, [detail?.region?.id]);
+
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setBookingDebouncedCustomerSearch(bookingCustomerSearch.trim());
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [bookingCustomerSearch]);
+
+  const {
+    data: bookingCustomerSearchData,
+    isLoading: isBookingCustomerSearchLoading,
+    isError: isBookingCustomerSearchError,
+    error: bookingCustomerSearchError,
+  } = useCustomerSearchQuery({
+    search: bookingDebouncedCustomerSearch,
+    limit: 10,
+    enabled: activeModal === "booking",
+  });
+
+  const bookingCustomerResults = bookingCustomerSearchData?.customers ?? [];
 
   if (!yacht) return null;
 
@@ -240,6 +265,10 @@ export function YachtEditDrawer({ yacht, onClose }: YachtEditDrawerProps) {
       setBookingGuestCount("");
       setBookingBaseAmount("");
       setBookingTotalAmount("");
+      setBookingCustomerSearch("");
+      setBookingDebouncedCustomerSearch("");
+      setBookingSelectedCustomer(null);
+      setIsBookingCustomerMenuOpen(false);
       setActiveModal(null);
     } finally {
       setIsSubmitting(false);
@@ -923,18 +952,87 @@ export function YachtEditDrawer({ yacht, onClose }: YachtEditDrawerProps) {
 
             {activeModal === "booking" && (
               <div className="space-y-4">
-                <input
-                  type="text"
-                  placeholder="Customer ID"
-                  value={bookingCustomerId}
-                  onChange={(e) => setBookingCustomerId(e.target.value)}
-                  className={inputClass}
-                  style={{
-                    backgroundColor: colors.background,
-                    borderColor: colors.cardBorder,
-                    color: colors.textPrimary,
-                  }}
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search customer by name, email, or phone"
+                    value={bookingCustomerSearch}
+                    onChange={(e) => {
+                      setBookingCustomerSearch(e.target.value);
+                      setBookingSelectedCustomer(null);
+                      setBookingCustomerId("");
+                      setIsBookingCustomerMenuOpen(true);
+                    }}
+                    onFocus={() => setIsBookingCustomerMenuOpen(true)}
+                    onBlur={() => {
+                      window.setTimeout(() => setIsBookingCustomerMenuOpen(false), 150);
+                    }}
+                    className={inputClass}
+                    style={{
+                      backgroundColor: colors.background,
+                      borderColor: colors.cardBorder,
+                      color: colors.textPrimary,
+                    }}
+                  />
+                  {isBookingCustomerMenuOpen && bookingCustomerSearch.trim().length >= 2 && (
+                    <div
+                      className="absolute z-20 mt-2 w-full rounded-lg border shadow-lg max-h-56 overflow-y-auto"
+                      style={{
+                        backgroundColor: colors.cardBg,
+                        borderColor: colors.cardBorder,
+                      }}
+                    >
+                      {isBookingCustomerSearchLoading ? (
+                        <div className="px-3 py-2 text-sm" style={{ color: colors.textSecondary }}>
+                          Searching...
+                        </div>
+                      ) : isBookingCustomerSearchError ? (
+                        <div className="px-3 py-2 text-sm" style={{ color: colors.danger }}>
+                          {bookingCustomerSearchError instanceof Error
+                            ? bookingCustomerSearchError.message
+                            : "Failed to load customers."}
+                        </div>
+                      ) : bookingCustomerResults.length === 0 ? (
+                        <div className="px-3 py-2 text-sm" style={{ color: colors.textSecondary }}>
+                          No customers found.
+                        </div>
+                      ) : (
+                        bookingCustomerResults.map((customer) => {
+                          const label = `${customer.firstName} ${customer.lastName}`.trim() || customer.email;
+                          const subLabel = customer.email || customer.phone || customer.whatsapp || "";
+                          return (
+                            <button
+                              key={customer.id}
+                              type="button"
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-black/5"
+                              style={{ color: colors.textPrimary }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setBookingSelectedCustomer(customer);
+                                setBookingCustomerSearch(label);
+                                setBookingCustomerId(customer.id);
+                                setIsBookingCustomerMenuOpen(false);
+                              }}
+                            >
+                              <div className="font-medium">{label}</div>
+                              {subLabel ? (
+                                <div className="text-[11px]" style={{ color: colors.textSecondary }}>
+                                  {subLabel}
+                                </div>
+                              ) : null}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  )}
+                  {bookingSelectedCustomer && (
+                    <div className="mt-1 text-[11px]" style={{ color: colors.textSecondary }}>
+                      Selected: {bookingSelectedCustomer.firstName} {bookingSelectedCustomer.lastName} (
+                      {bookingSelectedCustomer.email})
+                    </div>
+                  )}
+                </div>
                 <input
                   type="text"
                   placeholder="Package ID"

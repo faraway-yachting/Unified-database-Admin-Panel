@@ -6,3 +6,4 @@ export * from "./charterCompanies";
 export * from "./bookings";
 export * from "./packages";
 export * from "./customers";
+export * from "./pricing";

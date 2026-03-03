@@ -78,259 +78,272 @@ export function BookingsTable({
         </p>
       </div>
 
-      <div className="overflow-x-auto -mx-4 md:mx-0">
-        <div className="inline-block min-w-full align-middle">
-          <div className="overflow-hidden">
-            <table className="min-w-full">
-              <thead>
-                <tr style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-                  <th
-                    className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    ID
-                  </th>
-                  <th
-                    className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Customer
-                  </th>
-                  <th
-                    className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Yacht
-                  </th>
-                  <th
-                    className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Package
-                  </th>
-                  <th
-                    className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Region
-                  </th>
-                  <th
-                    className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Start Date
-                  </th>
-                  <th
-                    className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    End Date
-                  </th>
-                  <th
-                    className="text-right text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Total
-                  </th>
-                  <th
-                    className="text-center text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Status
-                  </th>
-                  <th
-                    className="text-center text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.map((booking) => {
-                  const statusConfig = getStatusConfig(booking.status);
-                  const isCancelled = booking.status === "cancelled";
-
-                  return (
-                    <tr
-                      key={booking.id}
-                      className="transition-colors"
-                      style={{
-                        borderBottom: `1px solid ${colors.cardBorder}`,
-                        opacity: isCancelled ? 0.6 : 1,
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = colors.hoverBg;
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = "transparent";
-                      }}
+      {bookings.length === 0 ? (
+        <div
+          className="rounded-lg border p-6 text-center text-sm"
+          style={{
+            backgroundColor: colors.background,
+            borderColor: colors.cardBorder,
+            color: colors.textSecondary,
+          }}
+        >
+          No bookings found.
+        </div>
+      ) : (
+        <div className="overflow-x-auto -mx-4 md:mx-0">
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden">
+              <table className="min-w-full">
+                <thead>
+                  <tr style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
+                    <th
+                      className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
+                      style={{ color: colors.textSecondary }}
                     >
-                      <td className="py-3 md:py-4 px-2">
-                        <div
-                          className="text-xs md:text-sm font-mono font-medium whitespace-nowrap"
-                          style={{
-                            color: colors.accent,
-                            textDecoration: isCancelled ? "line-through" : "none",
-                          }}
-                        >
-                          {booking.bookingRef}
-                        </div>
-                      </td>
-                      <td className="py-3 md:py-4 px-2">
-                        <div
-                          className="text-xs md:text-sm font-medium whitespace-nowrap"
-                          style={{
-                            color: colors.textPrimary,
-                            textDecoration: isCancelled ? "line-through" : "none",
-                          }}
-                        >
-                          {booking.customer}
-                        </div>
-                      </td>
-                      <td className="py-3 md:py-4 px-2">
-                        <div
-                          className="text-xs md:text-sm whitespace-nowrap"
-                          style={{
-                            color: colors.textSecondary,
-                            textDecoration: isCancelled ? "line-through" : "none",
-                          }}
-                        >
-                          {booking.yacht}
-                        </div>
-                      </td>
-                      <td className="py-3 md:py-4 px-2">
-                        <div
-                          className="text-xs md:text-sm whitespace-nowrap"
-                          style={{ color: colors.textSecondary }}
-                        >
-                          {booking.package}
-                        </div>
-                      </td>
-                      <td className="py-3 md:py-4 px-2">
-                        <div
-                          className="text-xs md:text-sm whitespace-nowrap"
-                          style={{ color: colors.textSecondary }}
-                        >
-                          {booking.region}
-                        </div>
-                      </td>
-                      <td className="py-3 md:py-4 px-2">
-                        <div
-                          className="text-xs md:text-sm font-mono whitespace-nowrap"
-                          style={{ color: colors.textPrimary }}
-                        >
-                          {booking.startDate}
-                        </div>
-                      </td>
-                      <td className="py-3 md:py-4 px-2">
-                        <div
-                          className="text-xs md:text-sm font-mono whitespace-nowrap"
-                          style={{ color: colors.textPrimary }}
-                        >
-                          {booking.endDate}
-                        </div>
-                      </td>
-                      <td className="py-3 md:py-4 px-2 text-right">
-                        <div
-                          className="text-xs md:text-sm font-mono font-bold whitespace-nowrap"
-                          style={{
-                            color: colors.textPrimary,
-                            textDecoration: isCancelled ? "line-through" : "none",
-                          }}
-                        >
-                          {booking.currency} {booking.totalAmount.toLocaleString()}
-                        </div>
-                      </td>
-                      <td className="py-3 md:py-4 px-2">
-                        <div className="flex justify-center">
+                      ID
+                    </th>
+                    <th
+                      className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Customer
+                    </th>
+                    <th
+                      className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Yacht
+                    </th>
+                    <th
+                      className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Package
+                    </th>
+                    <th
+                      className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Region
+                    </th>
+                    <th
+                      className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Start Date
+                    </th>
+                    <th
+                      className="text-left text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      End Date
+                    </th>
+                    <th
+                      className="text-right text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Total
+                    </th>
+                    <th
+                      className="text-center text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Status
+                    </th>
+                    <th
+                      className="text-center text-xs font-semibold uppercase tracking-wide pb-3 md:pb-4 px-2 whitespace-nowrap"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bookings.map((booking) => {
+                    const statusConfig = getStatusConfig(booking.status);
+                    const isCancelled = booking.status === "cancelled";
+
+                    return (
+                      <tr
+                        key={booking.id}
+                        className="transition-colors"
+                        style={{
+                          borderBottom: `1px solid ${colors.cardBorder}`,
+                          opacity: isCancelled ? 0.6 : 1,
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = colors.hoverBg;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = "transparent";
+                        }}
+                      >
+                        <td className="py-3 md:py-4 px-2">
                           <div
-                            className="px-2 md:px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap"
+                            className="text-xs md:text-sm font-mono font-medium whitespace-nowrap"
                             style={{
-                              backgroundColor: statusConfig.bgColor,
-                              color: statusConfig.textColor,
+                              color: colors.accent,
+                              textDecoration: isCancelled ? "line-through" : "none",
                             }}
                           >
-                            {booking.status}
+                            {booking.bookingRef}
                           </div>
-                        </div>
-                      </td>
-                      <td className="py-3 md:py-4 px-2">
-                        <div className="flex items-center justify-center gap-1 md:gap-2">
-                          <button
-                            type="button"
-                            onClick={() => onView(booking)}
-                            className="p-1 md:p-1.5 rounded-lg transition-all"
+                        </td>
+                        <td className="py-3 md:py-4 px-2">
+                          <div
+                            className="text-xs md:text-sm font-medium whitespace-nowrap"
                             style={{
-                              backgroundColor: colors.background,
-                              color: colors.textSecondary,
+                              color: colors.textPrimary,
+                              textDecoration: isCancelled ? "line-through" : "none",
                             }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = `${colors.accent}15`;
-                              e.currentTarget.style.color = colors.accent;
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = colors.background;
-                              e.currentTarget.style.color = colors.textSecondary;
-                            }}
-                            title="View"
                           >
-                            <Eye className="w-3 h-3 md:w-4 md:h-4" />
-                          </button>
-                          {!isCancelled && (
-                            <>
-                              <button
-                                type="button"
-                                onClick={() => onEdit(booking)}
-                                className="p-1 md:p-1.5 rounded-lg transition-all"
-                                style={{
-                                  backgroundColor: colors.background,
-                                  color: colors.textSecondary,
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = `${colors.accentGold}15`;
-                                  e.currentTarget.style.color = colors.accentGold;
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = colors.background;
-                                  e.currentTarget.style.color = colors.textSecondary;
-                                }}
-                                title="Edit"
-                              >
-                                <Edit className="w-3 h-3 md:w-4 md:h-4" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => onDelete(booking)}
-                                className="p-1 md:p-1.5 rounded-lg transition-all"
-                                style={{
-                                  backgroundColor: colors.background,
-                                  color: colors.textSecondary,
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = `${colors.danger}15`;
-                                  e.currentTarget.style.color = colors.danger;
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = colors.background;
-                                  e.currentTarget.style.color = colors.textSecondary;
-                                }}
-                            title="Delete"
-                              >
-                                <XCircle className="w-3 h-3 md:w-4 md:h-4" />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            {booking.customer}
+                          </div>
+                        </td>
+                        <td className="py-3 md:py-4 px-2">
+                          <div
+                            className="text-xs md:text-sm whitespace-nowrap"
+                            style={{
+                              color: colors.textSecondary,
+                              textDecoration: isCancelled ? "line-through" : "none",
+                            }}
+                          >
+                            {booking.yacht}
+                          </div>
+                        </td>
+                        <td className="py-3 md:py-4 px-2">
+                          <div
+                            className="text-xs md:text-sm whitespace-nowrap"
+                            style={{ color: colors.textSecondary }}
+                          >
+                            {booking.package}
+                          </div>
+                        </td>
+                        <td className="py-3 md:py-4 px-2">
+                          <div
+                            className="text-xs md:text-sm whitespace-nowrap"
+                            style={{ color: colors.textSecondary }}
+                          >
+                            {booking.region}
+                          </div>
+                        </td>
+                        <td className="py-3 md:py-4 px-2">
+                          <div
+                            className="text-xs md:text-sm font-mono whitespace-nowrap"
+                            style={{ color: colors.textPrimary }}
+                          >
+                            {booking.startDate}
+                          </div>
+                        </td>
+                        <td className="py-3 md:py-4 px-2">
+                          <div
+                            className="text-xs md:text-sm font-mono whitespace-nowrap"
+                            style={{ color: colors.textPrimary }}
+                          >
+                            {booking.endDate}
+                          </div>
+                        </td>
+                        <td className="py-3 md:py-4 px-2 text-right">
+                          <div
+                            className="text-xs md:text-sm font-mono font-bold whitespace-nowrap"
+                            style={{
+                              color: colors.textPrimary,
+                              textDecoration: isCancelled ? "line-through" : "none",
+                            }}
+                          >
+                            {booking.currency} {booking.totalAmount.toLocaleString()}
+                          </div>
+                        </td>
+                        <td className="py-3 md:py-4 px-2">
+                          <div className="flex justify-center">
+                            <div
+                              className="px-2 md:px-3 py-1 rounded-full text-xs font-medium capitalize whitespace-nowrap"
+                              style={{
+                                backgroundColor: statusConfig.bgColor,
+                                color: statusConfig.textColor,
+                              }}
+                            >
+                              {booking.status}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 md:py-4 px-2">
+                          <div className="flex items-center justify-center gap-1 md:gap-2">
+                            <button
+                              type="button"
+                              onClick={() => onView(booking)}
+                              className="p-1 md:p-1.5 rounded-lg transition-all"
+                              style={{
+                                backgroundColor: colors.background,
+                                color: colors.textSecondary,
+                              }}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = `${colors.accent}15`;
+                                e.currentTarget.style.color = colors.accent;
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = colors.background;
+                                e.currentTarget.style.color = colors.textSecondary;
+                              }}
+                              title="View"
+                            >
+                              <Eye className="w-3 h-3 md:w-4 md:h-4" />
+                            </button>
+                            {!isCancelled && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => onEdit(booking)}
+                                  className="p-1 md:p-1.5 rounded-lg transition-all"
+                                  style={{
+                                    backgroundColor: colors.background,
+                                    color: colors.textSecondary,
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = `${colors.accentGold}15`;
+                                    e.currentTarget.style.color = colors.accentGold;
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = colors.background;
+                                    e.currentTarget.style.color = colors.textSecondary;
+                                  }}
+                                  title="Edit"
+                                >
+                                  <Edit className="w-3 h-3 md:w-4 md:h-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => onDelete(booking)}
+                                  className="p-1 md:p-1.5 rounded-lg transition-all"
+                                  style={{
+                                    backgroundColor: colors.background,
+                                    color: colors.textSecondary,
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = `${colors.danger}15`;
+                                    e.currentTarget.style.color = colors.danger;
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = colors.background;
+                                    e.currentTarget.style.color = colors.textSecondary;
+                                  }}
+                                  title="Delete"
+                                >
+                                  <XCircle className="w-3 h-3 md:w-4 md:h-4" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

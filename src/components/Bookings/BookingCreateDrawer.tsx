@@ -253,6 +253,9 @@ export function BookingCreateDrawer({ isOpen, onClose }: BookingCreateDrawerProp
                 </h4>
                 <div className="space-y-4">
                   <div className="relative">
+                    <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                      Customer
+                    </label>
                     <input
                       type="text"
                       placeholder="Search customer by name, email, or phone"
@@ -331,6 +334,9 @@ export function BookingCreateDrawer({ isOpen, onClose }: BookingCreateDrawerProp
                     )}
                   </div>
                   <div className="relative">
+                    <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                      Yacht
+                    </label>
                     <select
                       value={form.yachtId}
                       onChange={(e) => updateField("yachtId", e.target.value)}
@@ -351,6 +357,9 @@ export function BookingCreateDrawer({ isOpen, onClose }: BookingCreateDrawerProp
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: colors.textSecondary }} />
                   </div>
                   <div className="relative">
+                    <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                      Package
+                    </label>
                     <select
                       value={form.packageId}
                       onChange={(e) => updateField("packageId", e.target.value)}
@@ -371,6 +380,9 @@ export function BookingCreateDrawer({ isOpen, onClose }: BookingCreateDrawerProp
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: colors.textSecondary }} />
                   </div>
                   <div className="relative">
+                    <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                      Region
+                    </label>
                     <select
                       value={form.regionId}
                       onChange={(e) => updateField("regionId", e.target.value)}
@@ -391,28 +403,38 @@ export function BookingCreateDrawer({ isOpen, onClose }: BookingCreateDrawerProp
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: colors.textSecondary }} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="date"
-                      value={form.startDate}
-                      onChange={(e) => updateField("startDate", e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border text-sm"
-                      style={{
-                        backgroundColor: colors.background,
-                        borderColor: colors.cardBorder,
-                        color: colors.textPrimary,
-                      }}
-                    />
-                    <input
-                      type="date"
-                      value={form.endDate}
-                      onChange={(e) => updateField("endDate", e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border text-sm"
-                      style={{
-                        backgroundColor: colors.background,
-                        borderColor: colors.cardBorder,
-                        color: colors.textPrimary,
-                      }}
-                    />
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                        Start date
+                      </label>
+                      <input
+                        type="date"
+                        value={form.startDate}
+                        onChange={(e) => updateField("startDate", e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg border text-sm"
+                        style={{
+                          backgroundColor: colors.background,
+                          borderColor: colors.cardBorder,
+                          color: colors.textPrimary,
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                        End date
+                      </label>
+                      <input
+                        type="date"
+                        value={form.endDate}
+                        onChange={(e) => updateField("endDate", e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg border text-sm"
+                        style={{
+                          backgroundColor: colors.background,
+                          borderColor: colors.cardBorder,
+                          color: colors.textPrimary,
+                        }}
+                      />
+                    </div>
                   </div>
                   {availabilityEnabled && (
                     <div className="text-[11px] md:text-xs">
@@ -447,19 +469,24 @@ export function BookingCreateDrawer({ isOpen, onClose }: BookingCreateDrawerProp
                       )}
                     </div>
                   )}
-                  <input
-                    type="number"
-                    min={1}
-                    placeholder="Guest count"
-                    value={form.guestCount}
-                    onChange={(e) => updateField("guestCount", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border text-sm"
-                    style={{
-                      backgroundColor: colors.background,
-                      borderColor: colors.cardBorder,
-                      color: colors.textPrimary,
-                    }}
-                  />
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                      Guest count
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="Guest count"
+                      value={form.guestCount}
+                      onChange={(e) => updateField("guestCount", e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border text-sm"
+                      style={{
+                        backgroundColor: colors.background,
+                        borderColor: colors.cardBorder,
+                        color: colors.textPrimary,
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -471,47 +498,65 @@ export function BookingCreateDrawer({ isOpen, onClose }: BookingCreateDrawerProp
                 </h4>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="number"
-                      min={0}
-                      placeholder="Base amount"
-                      value={form.baseAmount}
-                      onChange={(e) => updateField("baseAmount", e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border text-sm"
-                      style={{
-                        backgroundColor: colors.background,
-                        borderColor: colors.cardBorder,
-                        color: colors.textPrimary,
-                      }}
-                    />
-                    <input
-                      type="number"
-                      min={0}
-                      placeholder="Total amount"
-                      value={form.totalAmount}
-                      onChange={(e) => updateField("totalAmount", e.target.value)}
-                      className="w-full px-4 py-2.5 rounded-lg border text-sm"
-                      style={{
-                        backgroundColor: colors.background,
-                        borderColor: colors.cardBorder,
-                        color: colors.textPrimary,
-                      }}
-                    />
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                        Base amount
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="Base amount"
+                        value={form.baseAmount}
+                        onChange={(e) => updateField("baseAmount", e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg border text-sm"
+                        style={{
+                          backgroundColor: colors.background,
+                          borderColor: colors.cardBorder,
+                          color: colors.textPrimary,
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                        Total amount
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="Total amount"
+                        value={form.totalAmount}
+                        onChange={(e) => updateField("totalAmount", e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-lg border text-sm"
+                        style={{
+                          backgroundColor: colors.background,
+                          borderColor: colors.cardBorder,
+                          color: colors.textPrimary,
+                        }}
+                      />
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      placeholder="Currency code"
-                      value={form.currencyCode}
-                      onChange={(e) => updateField("currencyCode", e.target.value.toUpperCase())}
-                      className="w-full px-4 py-2.5 rounded-lg border text-sm"
-                      style={{
-                        backgroundColor: colors.background,
-                        borderColor: colors.cardBorder,
-                        color: colors.textPrimary,
-                      }}
-                    />
+                    <div>
+                      <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                        Currency code
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Currency code"
+                        value={form.currencyCode}
+                        onChange={(e) => updateField("currencyCode", e.target.value.toUpperCase())}
+                        className="w-full px-4 py-2.5 rounded-lg border text-sm"
+                        style={{
+                          backgroundColor: colors.background,
+                          borderColor: colors.cardBorder,
+                          color: colors.textPrimary,
+                        }}
+                      />
+                    </div>
                     <div className="relative">
+                      <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                        Status
+                      </label>
                       <select
                         value={form.status}
                         onChange={(e) => updateField("status", e.target.value)}
@@ -539,30 +584,40 @@ export function BookingCreateDrawer({ isOpen, onClose }: BookingCreateDrawerProp
                   Notes
                 </h4>
                 <div className="space-y-4">
-                  <textarea
-                    rows={3}
-                    placeholder="Special requests"
-                    value={form.specialRequests}
-                    onChange={(e) => updateField("specialRequests", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border text-sm"
-                    style={{
-                      backgroundColor: colors.background,
-                      borderColor: colors.cardBorder,
-                      color: colors.textPrimary,
-                    }}
-                  />
-                  <textarea
-                    rows={3}
-                    placeholder="Internal notes"
-                    value={form.internalNotes}
-                    onChange={(e) => updateField("internalNotes", e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-lg border text-sm"
-                    style={{
-                      backgroundColor: colors.background,
-                      borderColor: colors.cardBorder,
-                      color: colors.textPrimary,
-                    }}
-                  />
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                      Special requests
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="Special requests"
+                      value={form.specialRequests}
+                      onChange={(e) => updateField("specialRequests", e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border text-sm"
+                      style={{
+                        backgroundColor: colors.background,
+                        borderColor: colors.cardBorder,
+                        color: colors.textPrimary,
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
+                      Internal notes
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="Internal notes"
+                      value={form.internalNotes}
+                      onChange={(e) => updateField("internalNotes", e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-lg border text-sm"
+                      style={{
+                        backgroundColor: colors.background,
+                        borderColor: colors.cardBorder,
+                        color: colors.textPrimary,
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

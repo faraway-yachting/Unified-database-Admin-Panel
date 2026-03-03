@@ -50,67 +50,68 @@ export function PackagesTable({
         </p>
       </div>
 
-      <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
-        <table className="w-full min-w-[900px]">
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
-              <th
-                className="text-left text-xs font-semibold uppercase tracking-wide pb-4 px-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Package Name
-              </th>
-              <th
-                className="text-left text-xs font-semibold uppercase tracking-wide pb-4 px-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Yacht
-              </th>
-              <th
-                className="text-left text-xs font-semibold uppercase tracking-wide pb-4 px-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Duration
-              </th>
-              <th
-                className="text-left text-xs font-semibold uppercase tracking-wide pb-4 px-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Region
-              </th>
-              <th
-                className="text-right text-xs font-semibold uppercase tracking-wide pb-4 px-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Price
-              </th>
-              <th
-                className="text-center text-xs font-semibold uppercase tracking-wide pb-4 px-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Status
-              </th>
-              <th
-                className="text-center text-xs font-semibold uppercase tracking-wide pb-4 px-2"
-                style={{ color: colors.textSecondary }}
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {packages.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={8}
-                  className="py-12 text-center text-sm"
+      {packages.length === 0 ? (
+        <div
+          className="rounded-lg border p-6 text-center text-sm"
+          style={{
+            backgroundColor: colors.background,
+            borderColor: colors.cardBorder,
+            color: colors.textSecondary,
+          }}
+        >
+          No packages found.
+        </div>
+      ) : (
+        <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+          <table className="w-full min-w-[900px]">
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
+                <th
+                  className="text-left text-xs font-semibold uppercase tracking-wide pb-4 px-2"
                   style={{ color: colors.textSecondary }}
                 >
-                  No packages match your filters.
-                </td>
+                  Package Name
+                </th>
+                <th
+                  className="text-left text-xs font-semibold uppercase tracking-wide pb-4 px-2"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Yacht
+                </th>
+                <th
+                  className="text-left text-xs font-semibold uppercase tracking-wide pb-4 px-2"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Duration
+                </th>
+                <th
+                  className="text-left text-xs font-semibold uppercase tracking-wide pb-4 px-2"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Region
+                </th>
+                <th
+                  className="text-right text-xs font-semibold uppercase tracking-wide pb-4 px-2"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Price
+                </th>
+                <th
+                  className="text-center text-xs font-semibold uppercase tracking-wide pb-4 px-2"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Status
+                </th>
+                <th
+                  className="text-center text-xs font-semibold uppercase tracking-wide pb-4 px-2"
+                  style={{ color: colors.textSecondary }}
+                >
+                  Actions
+                </th>
               </tr>
-            ) : (
-              packages.map((pkg) => (
+            </thead>
+            <tbody>
+              {packages.map((pkg) => (
                 <tr
                   key={pkg.id}
                   className="transition-colors"
@@ -235,11 +236,11 @@ export function PackagesTable({
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

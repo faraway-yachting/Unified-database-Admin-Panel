@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Edit, Plus } from "lucide-react";
+import { Eye, Edit, Plus, Trash2 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
 export interface Commission {
@@ -17,6 +17,7 @@ interface CommissionPanelProps {
   commissions: Commission[];
   onView: (commission: Commission) => void;
   onEdit: (commission: Commission) => void;
+  onDelete: (commission: Commission) => void;
   onAddAgent: () => void;
 }
 
@@ -24,6 +25,7 @@ export function CommissionPanel({
   commissions,
   onView,
   onEdit,
+  onDelete,
   onAddAgent,
 }: CommissionPanelProps) {
   const { colors } = useTheme();
@@ -233,6 +235,26 @@ export function CommissionPanel({
                       title="Edit"
                     >
                       <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(commission)}
+                      className="p-1.5 rounded-lg transition-all"
+                      style={{
+                        backgroundColor: colors.background,
+                        color: colors.textSecondary,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = `${colors.danger}15`;
+                        e.currentTarget.style.color = colors.danger;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = colors.background;
+                        e.currentTarget.style.color = colors.textSecondary;
+                      }}
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </td>

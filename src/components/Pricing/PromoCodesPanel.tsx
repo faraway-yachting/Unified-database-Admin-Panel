@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Power, Plus } from "lucide-react";
+import { Copy, Edit, Plus, Trash2 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
 export interface PromoCode {
@@ -16,14 +16,16 @@ export interface PromoCode {
 interface PromoCodesPanelProps {
   promoCodes: PromoCode[];
   onCopy: (code: PromoCode) => void;
-  onDeactivate: (code: PromoCode) => void;
+  onEdit: (code: PromoCode) => void;
+  onDelete: (code: PromoCode) => void;
   onCreate: () => void;
 }
 
 export function PromoCodesPanel({
   promoCodes,
   onCopy,
-  onDeactivate,
+  onEdit,
+  onDelete,
   onCreate,
 }: PromoCodesPanelProps) {
   const { colors } = useTheme();
@@ -217,28 +219,46 @@ export function PromoCodesPanel({
                     >
                       <Copy className="w-4 h-4" />
                     </button>
-                    {promo.status === "active" && (
-                      <button
-                        type="button"
-                        onClick={() => onDeactivate(promo)}
-                        className="p-1.5 rounded-lg transition-all"
-                        style={{
-                          backgroundColor: colors.background,
-                          color: colors.textSecondary,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = `${colors.danger}15`;
-                          e.currentTarget.style.color = colors.danger;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = colors.background;
-                          e.currentTarget.style.color = colors.textSecondary;
-                        }}
-                        title="Deactivate"
-                      >
-                        <Power className="w-4 h-4" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => onEdit(promo)}
+                      className="p-1.5 rounded-lg transition-all"
+                      style={{
+                        backgroundColor: colors.background,
+                        color: colors.textSecondary,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = `${colors.accentGold}15`;
+                        e.currentTarget.style.color = colors.accentGold;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = colors.background;
+                        e.currentTarget.style.color = colors.textSecondary;
+                      }}
+                      title="Edit"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(promo)}
+                      className="p-1.5 rounded-lg transition-all"
+                      style={{
+                        backgroundColor: colors.background,
+                        color: colors.textSecondary,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = `${colors.danger}15`;
+                        e.currentTarget.style.color = colors.danger;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = colors.background;
+                        e.currentTarget.style.color = colors.textSecondary;
+                      }}
+                      title="Delete"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </td>
               </tr>

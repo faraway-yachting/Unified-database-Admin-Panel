@@ -1,6 +1,4 @@
 "use client";
-
-import { useState } from "react";
 import {
   Area,
   AreaChart,
@@ -20,11 +18,20 @@ interface RevenueChartProps {
     pacific: number;
     indianOcean: number;
   }>;
+  timeFilter: string;
+  onTimeFilterChange: (value: string) => void;
+  isLoading?: boolean;
+  errorMessage?: string;
 }
 
-export function RevenueChart({ data }: RevenueChartProps) {
+export function RevenueChart({
+  data,
+  timeFilter,
+  onTimeFilterChange,
+  isLoading,
+  errorMessage,
+}: RevenueChartProps) {
   const { colors } = useTheme();
-  const [timeFilter, setTimeFilter] = useState("1Y");
 
   const timeFilters = ["1M", "3M", "6M", "1Y"];
 
@@ -66,7 +73,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
             <button
               key={filter}
               type="button"
-              onClick={() => setTimeFilter(filter)}
+              onClick={() => onTimeFilterChange(filter)}
               className="px-4 py-1.5 rounded-lg text-sm font-medium transition-all"
               style={{
                 backgroundColor: timeFilter === filter ? colors.accent : "transparent",
@@ -79,106 +86,116 @@ export function RevenueChart({ data }: RevenueChartProps) {
         </div>
       </div>
 
-      <div className="h-[320px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
-            <defs>
-              <linearGradient id="colorMediterranean" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor={regionColors.mediterranean}
-                  stopOpacity={0.3}
-                />
-                <stop
-                  offset="95%"
-                  stopColor={regionColors.mediterranean}
-                  stopOpacity={0}
-                />
-              </linearGradient>
-              <linearGradient id="colorCaribbean" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor={regionColors.caribbean}
-                  stopOpacity={0.3}
-                />
-                <stop offset="95%" stopColor={regionColors.caribbean} stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="colorPacific" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={regionColors.pacific} stopOpacity={0.3} />
-                <stop offset="95%" stopColor={regionColors.pacific} stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="colorIndianOcean" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor={regionColors.indianOcean}
-                  stopOpacity={0.3}
-                />
-                <stop
-                  offset="95%"
-                  stopColor={regionColors.indianOcean}
-                  stopOpacity={0}
-                />
-              </linearGradient>
-            </defs>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke={colors.cardBorder}
-              opacity={0.3}
-            />
-            <XAxis
-              dataKey="month"
-              stroke={colors.textSecondary}
-              style={{ fontSize: "12px" }}
-            />
-            <YAxis
-              stroke={colors.textSecondary}
-              style={{ fontSize: "12px" }}
-              tickFormatter={(value) => `$${value}k`}
-            />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: colors.cardBg,
-                border: `1px solid ${colors.cardBorder}`,
-                borderRadius: "8px",
-                color: colors.textPrimary,
-              }}
-              formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
-            />
-            <Area
-              type="monotone"
-              dataKey="mediterranean"
-              stackId="1"
-              stroke={regionColors.mediterranean}
-              fill="url(#colorMediterranean)"
-              strokeWidth={2}
-            />
-            <Area
-              type="monotone"
-              dataKey="caribbean"
-              stackId="1"
-              stroke={regionColors.caribbean}
-              fill="url(#colorCaribbean)"
-              strokeWidth={2}
-            />
-            <Area
-              type="monotone"
-              dataKey="pacific"
-              stackId="1"
-              stroke={regionColors.pacific}
-              fill="url(#colorPacific)"
-              strokeWidth={2}
-            />
-            <Area
-              type="monotone"
-              dataKey="indianOcean"
-              stackId="1"
-              stroke={regionColors.indianOcean}
-              fill="url(#colorIndianOcean)"
-              strokeWidth={2}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+      {isLoading ? (
+        <div className="h-[320px] flex items-center justify-center text-sm" style={{ color: colors.textSecondary }}>
+          Loading revenue overview...
+        </div>
+      ) : errorMessage ? (
+        <div className="h-[320px] flex items-center justify-center text-sm" style={{ color: colors.danger }}>
+          {errorMessage}
+        </div>
+      ) : (
+        <div className="h-[320px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data}>
+              <defs>
+                <linearGradient id="colorMediterranean" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor={regionColors.mediterranean}
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor={regionColors.mediterranean}
+                    stopOpacity={0}
+                  />
+                </linearGradient>
+                <linearGradient id="colorCaribbean" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor={regionColors.caribbean}
+                    stopOpacity={0.3}
+                  />
+                  <stop offset="95%" stopColor={regionColors.caribbean} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorPacific" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={regionColors.pacific} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={regionColors.pacific} stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorIndianOcean" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor={regionColors.indianOcean}
+                    stopOpacity={0.3}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor={regionColors.indianOcean}
+                    stopOpacity={0}
+                  />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke={colors.cardBorder}
+                opacity={0.3}
+              />
+              <XAxis
+                dataKey="month"
+                stroke={colors.textSecondary}
+                style={{ fontSize: "12px" }}
+              />
+              <YAxis
+                stroke={colors.textSecondary}
+                style={{ fontSize: "12px" }}
+                tickFormatter={(value) => `$${value}k`}
+              />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: colors.cardBg,
+                  border: `1px solid ${colors.cardBorder}`,
+                  borderRadius: "8px",
+                  color: colors.textPrimary,
+                }}
+                formatter={(value: number) => [`$${value.toLocaleString()}`, ""]}
+              />
+              <Area
+                type="monotone"
+                dataKey="mediterranean"
+                stackId="1"
+                stroke={regionColors.mediterranean}
+                fill="url(#colorMediterranean)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="caribbean"
+                stackId="1"
+                stroke={regionColors.caribbean}
+                fill="url(#colorCaribbean)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="pacific"
+                stackId="1"
+                stroke={regionColors.pacific}
+                fill="url(#colorPacific)"
+                strokeWidth={2}
+              />
+              <Area
+                type="monotone"
+                dataKey="indianOcean"
+                stackId="1"
+                stroke={regionColors.indianOcean}
+                fill="url(#colorIndianOcean)"
+                strokeWidth={2}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
 
       <div
         className="flex items-center justify-center gap-6 mt-6 pt-6 border-t flex-wrap"

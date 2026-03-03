@@ -7,6 +7,9 @@ import {
   HelpCircle,
   Clock,
   XCircle,
+  Search,
+  SlidersHorizontal,
+  ChevronDown,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useBookings } from "@/context/BookingsContext";
@@ -30,15 +33,28 @@ import { BookingCreateDrawer } from "./BookingCreateDrawer";
 import { BookingEditDrawer } from "./BookingEditDrawer";
 
 const PAGE_SIZE = 20;
+const STATUS_OPTIONS = ["All", "Inquiry", "Confirmed", "Paid", "Completed", "Cancelled"] as const;
 
 export default function BookingEngine() {
   const { colors } = useTheme();
-  const { selectedStatus, selectedRegion, isCreateOpen, setIsCreateOpen } = useBookings();
+  const {
+    selectedStatus,
+    setSelectedStatus,
+    selectedRegion,
+    setSelectedRegion,
+    isCreateOpen,
+    setIsCreateOpen,
+  } = useBookings();
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
   const [editBookingId, setEditBookingId] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<Booking | null>(null);
   const [page, setPage] = useState(1);
   const [calendarDate, setCalendarDate] = useState(() => new Date());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [startDateFilter, setStartDateFilter] = useState("");
+  const [endDateFilter, setEndDateFilter] = useState("");
+  const [minPriceFilter, setMinPriceFilter] = useState("");
+  const [maxPriceFilter, setMaxPriceFilter] = useState("");
   const queryClient = useQueryClient();
   const { data: regionsData } = useRegionsQuery();
   const regions = regionsData ?? [];
@@ -61,10 +77,7 @@ export default function BookingEngine() {
   const calendarYear = calendarDate.getFullYear();
   const calendarMonthLabel = calendarDate.toLocaleString(undefined, { month: "long" });
   const calendarMonthParam = `${calendarYear}-${String(calendarMonth + 1).padStart(2, "0")}`;
-  const selectedRegionId =
-    selectedRegion && selectedRegion !== "All Regions"
-      ? regions.find((r) => r.name === selectedRegion)?.id
-      : undefined;
+  const selectedRegionId = selectedRegion || undefined;
 
   const {
     data: calendarData,
@@ -87,7 +100,13 @@ export default function BookingEngine() {
     return date.toLocaleDateString();
   };
 
-  const bookings = useMemo<Booking[]>(() => {
+  type BookingRow = Booking & {
+    startDateRaw?: string;
+    endDateRaw?: string;
+    regionId?: string;
+  };
+
+  const bookings = useMemo<BookingRow[]>(() => {
     return (data?.bookings ?? []).map((b) => {
       const customerName = `${b.customer?.firstName ?? ""} ${b.customer?.lastName ?? ""}`.trim() || "—";
       return {
@@ -99,12 +118,49 @@ export default function BookingEngine() {
         region: b.region?.name ?? "—",
         startDate: formatDateOnly(b.startDate),
         endDate: formatDateOnly(b.endDate),
+        startDateRaw: b.startDate ?? undefined,
+        endDateRaw: b.endDate ?? undefined,
+        regionId: b.region?.id ?? "",
         totalAmount: typeof b.totalAmount === "number" ? b.totalAmount : parseFloat(String(b.totalAmount)) || 0,
         currency: b.currency?.symbol ?? b.currency?.code ?? "",
         status: b.status as Booking["status"],
       };
     });
   }, [data?.bookings]);
+
+  const filteredBookings = useMemo(() => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const minPrice = minPriceFilter ? Number(minPriceFilter) : null;
+    const maxPrice = maxPriceFilter ? Number(maxPriceFilter) : null;
+    const startDate = startDateFilter ? new Date(startDateFilter) : null;
+    const endDate = endDateFilter ? new Date(endDateFilter) : null;
+    const hasValidStart = startDate && !Number.isNaN(startDate.getTime());
+    const hasValidEnd = endDate && !Number.isNaN(endDate.getTime());
+
+    return bookings.filter((booking) => {
+      if (normalizedSearch) {
+        const haystack = `${booking.bookingRef} ${booking.customer} ${booking.yacht} ${booking.package} ${booking.region}`.toLowerCase();
+        if (!haystack.includes(normalizedSearch)) return false;
+      }
+
+      if (selectedRegion && booking.regionId !== selectedRegion) return false;
+
+      if (hasValidStart) {
+        const bookingStart = booking.startDateRaw ? new Date(booking.startDateRaw) : null;
+        if (!bookingStart || Number.isNaN(bookingStart.getTime()) || bookingStart < startDate) return false;
+      }
+
+      if (hasValidEnd) {
+        const bookingEnd = booking.endDateRaw ? new Date(booking.endDateRaw) : null;
+        if (!bookingEnd || Number.isNaN(bookingEnd.getTime()) || bookingEnd > endDate) return false;
+      }
+
+      if (minPrice !== null && !Number.isNaN(minPrice) && booking.totalAmount < minPrice) return false;
+      if (maxPrice !== null && !Number.isNaN(maxPrice) && booking.totalAmount > maxPrice) return false;
+
+      return true;
+    });
+  }, [bookings, endDateFilter, maxPriceFilter, minPriceFilter, searchQuery, selectedRegion, startDateFilter]);
 
   const formatUpcomingDateRange = (booking: BookingListItem) => {
     const start = formatDateOnly(booking.startDate);
@@ -202,6 +258,16 @@ export default function BookingEngine() {
     setSelectedBookingId(booking.id);
   };
 
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedRegion("");
+    setSelectedStatus("All");
+    setStartDateFilter("");
+    setEndDateFilter("");
+    setMinPriceFilter("");
+    setMaxPriceFilter("");
+  };
+
   return (
     <div className="p-4 md:p-6 lg:p-8">
       {/* Row 1 - KPI Cards */}
@@ -268,6 +334,221 @@ export default function BookingEngine() {
         />
       </div>
 
+      <div className="mb-6 md:mb-8">
+        <div
+          className="rounded-xl p-4 md:p-6 border backdrop-blur-sm"
+          style={{
+            backgroundColor: colors.cardBg,
+            borderColor: colors.cardBorder,
+          }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <SlidersHorizontal className="w-5 h-5" style={{ color: colors.accent }} />
+            <h3 className="text-base md:text-lg font-bold" style={{ color: colors.textPrimary }}>
+              Quick Filters
+            </h3>
+          </div>
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="min-w-[220px] flex-1">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide mb-2 block"
+                style={{ color: colors.textSecondary }}
+              >
+                Search Booking
+              </label>
+              <div className="relative">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                  style={{ color: colors.textSecondary }}
+                  aria-hidden
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by ID, customer, yacht..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-lg border text-sm transition-all focus:outline-none focus:ring-2"
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = `${colors.accent}50`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.cardBorder;
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="min-w-[180px]">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide mb-2 block"
+                style={{ color: colors.textSecondary }}
+              >
+                Region
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedRegion}
+                  onChange={(e) => setSelectedRegion(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-lg border text-sm appearance-none transition-all cursor-pointer focus:outline-none"
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                >
+                  <option value="">All Regions</option>
+                  {regions.map((region) => (
+                    <option key={region.id} value={region.id}>
+                      {region.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                  style={{ color: colors.textSecondary }}
+                  aria-hidden
+                />
+              </div>
+            </div>
+
+            <div className="min-w-[180px]">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide mb-2 block"
+                style={{ color: colors.textSecondary }}
+              >
+                Status
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value as (typeof STATUS_OPTIONS)[number])}
+                  className="w-full px-4 py-2.5 rounded-lg border text-sm appearance-none transition-all cursor-pointer focus:outline-none"
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                >
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+                  style={{ color: colors.textSecondary }}
+                  aria-hidden
+                />
+              </div>
+            </div>
+
+            <div className="min-w-[180px]">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide mb-2 block"
+                style={{ color: colors.textSecondary }}
+              >
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDateFilter}
+                onChange={(e) => setStartDateFilter(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none"
+                style={{
+                  backgroundColor: colors.background,
+                  borderColor: colors.cardBorder,
+                  color: colors.textPrimary,
+                }}
+              />
+            </div>
+
+            <div className="min-w-[180px]">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide mb-2 block"
+                style={{ color: colors.textSecondary }}
+              >
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDateFilter}
+                onChange={(e) => setEndDateFilter(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-lg border text-sm focus:outline-none"
+                style={{
+                  backgroundColor: colors.background,
+                  borderColor: colors.cardBorder,
+                  color: colors.textPrimary,
+                }}
+              />
+            </div>
+
+            <div className="min-w-[240px]">
+              <label
+                className="text-xs font-semibold uppercase tracking-wide mb-2 block"
+                style={{ color: colors.textSecondary }}
+              >
+                Price Range
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="Min"
+                  value={minPriceFilter}
+                  onChange={(e) => setMinPriceFilter(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none"
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="Max"
+                  value={maxPriceFilter}
+                  onChange={(e) => setMaxPriceFilter(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border text-sm focus:outline-none"
+                  style={{
+                    backgroundColor: colors.background,
+                    borderColor: colors.cardBorder,
+                    color: colors.textPrimary,
+                  }}
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="px-4 py-2.5 rounded-lg border text-sm font-medium transition-all"
+              style={{
+                backgroundColor: "transparent",
+                borderColor: colors.cardBorder,
+                color: colors.textSecondary,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = colors.accent;
+                e.currentTarget.style.color = colors.accent;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = colors.cardBorder;
+                e.currentTarget.style.color = colors.textSecondary;
+              }}
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Row 3 - Bookings Table */}
       <div className="mb-6 md:mb-8">
         {isLoading ? (
@@ -280,7 +561,7 @@ export default function BookingEngine() {
           </div>
         ) : (
           <BookingsTable
-            bookings={bookings}
+            bookings={filteredBookings}
             onView={handleView}
             onEdit={handleEdit}
             onDelete={handleDelete}

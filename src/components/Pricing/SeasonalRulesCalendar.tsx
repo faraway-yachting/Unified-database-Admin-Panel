@@ -103,9 +103,9 @@ export function SeasonalRulesCalendar({ events }: SeasonalRulesCalendarProps) {
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="flex gap-4 overflow-x-auto pb-2">
         {months.map((month, monthIdx) => (
-          <div key={monthIdx}>
+          <div key={monthIdx} className="min-w-[260px] flex-shrink-0">
             <div
               className="text-xs font-semibold uppercase tracking-wide mb-2"
               style={{ color: colors.textPrimary }}

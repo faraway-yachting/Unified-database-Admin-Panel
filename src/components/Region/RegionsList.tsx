@@ -1,6 +1,6 @@
 "use client";
 
-import { Globe, Eye, Settings, ExternalLink } from "lucide-react";
+import { Globe, Eye, ExternalLink, Trash2 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
 export interface Region {
@@ -19,18 +19,18 @@ interface RegionsListProps {
   regions: Region[];
   selectedRegion: string | null;
   onSelectRegion: (regionId: string) => void;
-  onManage: (region: Region) => void;
   onPreview: (region: Region) => void;
-  onSettings: (region: Region) => void;
+  onView: (region: Region) => void;
+  onDelete: (region: Region) => void;
 }
 
 export function RegionsList({
   regions,
   selectedRegion,
   onSelectRegion,
-  onManage,
   onPreview,
-  onSettings,
+  onView,
+  onDelete,
 }: RegionsListProps) {
   const { colors } = useTheme();
 
@@ -172,14 +172,14 @@ export function RegionsList({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onManage(region);
+                        onPreview(region);
                       }}
                       className="p-1.5 rounded hover:bg-opacity-10 transition-all"
                       style={{
                         color: colors.accent,
                         backgroundColor: "transparent",
                       }}
-                      title="Manage"
+                      title="Live Preview"
                     >
                       <ExternalLink className="w-4 h-4" />
                     </button>
@@ -187,14 +187,14 @@ export function RegionsList({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onPreview(region);
+                        onView(region);
                       }}
                       className="p-1.5 rounded hover:bg-opacity-10 transition-all"
                       style={{
                         color: colors.textSecondary,
                         backgroundColor: "transparent",
                       }}
-                      title="Preview"
+                      title="View"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
@@ -202,16 +202,16 @@ export function RegionsList({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onSettings(region);
+                        onDelete(region);
                       }}
                       className="p-1.5 rounded hover:bg-opacity-10 transition-all"
                       style={{
-                        color: colors.textSecondary,
+                        color: colors.danger,
                         backgroundColor: "transparent",
                       }}
-                      title="Settings"
+                      title="Delete"
                     >
-                      <Settings className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

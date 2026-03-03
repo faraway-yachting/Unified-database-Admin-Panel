@@ -1,7 +1,6 @@
 "use client";
 
 import { Plus, Download, Calendar as CalendarIcon, ChevronDown } from "lucide-react";
-import Link from "next/link";
 import { useTheme } from "@/context/ThemeContext";
 import { usePricing } from "@/context/PricingContext";
 
@@ -15,7 +14,7 @@ const REGIONS = [
 
 export function PricingTopBarActions() {
   const { colors } = useTheme();
-  const { selectedRegion, setSelectedRegion, dateRangeLabel } = usePricing();
+  const { selectedRegion, setSelectedRegion, dateRangeLabel, setIsCreateRuleOpen } = usePricing();
 
   return (
     <div className="flex items-center gap-2 md:gap-4 flex-shrink-0 overflow-x-auto">
@@ -82,8 +81,9 @@ export function PricingTopBarActions() {
         <span className="hidden lg:inline">Export Report</span>
       </button>
 
-      <Link
-        href="/pricing/rules/new"
+      <button
+        type="button"
+        onClick={() => setIsCreateRuleOpen(true)}
         className="flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-lg transition-all text-xs md:text-sm font-semibold text-white shadow-lg flex-shrink-0"
         style={{
           background: `linear-gradient(to right, ${colors.accent}, #00B39F)`,
@@ -92,7 +92,7 @@ export function PricingTopBarActions() {
       >
         <Plus className="w-4 h-4" />
         <span className="hidden sm:inline">Add Rule</span>
-      </Link>
+      </button>
     </div>
   );
 }

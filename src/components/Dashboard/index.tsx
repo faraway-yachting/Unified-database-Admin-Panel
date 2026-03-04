@@ -10,144 +10,186 @@ import { useTheme } from "@/context/ThemeContext";
 import { KPICard } from "./KPICard";
 import { RevenueChart } from "./RevenueChart";
 import { BookingsDonut } from "./BookingsDonut";
-import { FleetStatusList } from "./FleetStatusList";
+import { FleetStatusSummary } from "./FleetStatusSummary";
 import { RecentBookingsTable } from "./RecentBookingsTable";
 import { WeeklyCalendar } from "./WeeklyCalendar";
 import { TopPackages } from "./TopPackages";
 import { PendingActions } from "./PendingActions";
+import LoadingSpinner from "@/components/common/LoadingSpinner";
+import {
+  useDashboardStatsQuery,
+  useRevenueChartQuery,
+  useBookingsByRegionQuery,
+  useFleetStatusQuery,
+  useUpcomingBookingsQuery,
+  useTopPackagesQuery,
+} from "@/lib/api/dashboard";
+import type { RevenueDataPoint } from "./RevenueChart";
+import type { BookingsDonutItem } from "./BookingsDonut";
+import type { RecentBooking } from "./RecentBookingsTable";
+import type { WeekDayEvent } from "./WeeklyCalendar";
+import type { TopPackageItem } from "./TopPackages";
 
-// Mock Data
-const kpiData = {
-  totalBookings: {
-    value: "1,284",
-    change: 12.5,
-    sparkline: [
-      { value: 45 }, { value: 52 }, { value: 48 }, { value: 61 }, { value: 55 },
-      { value: 67 }, { value: 72 }, { value: 68 }, { value: 75 }, { value: 82 },
-    ],
-  },
-  revenue: {
-    value: "$2.4M",
-    change: 18.2,
-    sparkline: [
-      { value: 120 }, { value: 135 }, { value: 128 }, { value: 145 }, { value: 152 },
-      { value: 168 }, { value: 175 }, { value: 182 }, { value: 195 }, { value: 210 },
-    ],
-  },
-  activeYachts: {
-    value: "87",
-    change: 5.3,
-    sparkline: [
-      { value: 75 }, { value: 77 }, { value: 79 }, { value: 80 }, { value: 81 },
-      { value: 82 }, { value: 84 }, { value: 85 }, { value: 86 }, { value: 87 },
-    ],
-  },
-  avgBookingValue: {
-    value: "$1,860",
-    change: 10.4,
-    sparkline: [
-      { value: 1700 }, { value: 1750 }, { value: 1800 }, { value: 1850 }, { value: 1900 },
-      { value: 1950 }, { value: 2000 }, { value: 2050 }, { value: 2100 }, { value: 2150 },
-    ],
-  },
-};
+const DONUT_COLORS = ["#00C9B1", "#F4A924", "#8B5CF6", "#EC4899", "#3B82F6", "#10B981"];
 
-const revenueData = [
-  { month: "Jan", mediterranean: 185000, caribbean: 245000, pacific: 165000, indian: 95000 },
-  { month: "Feb", mediterranean: 195000, caribbean: 265000, pacific: 175000, indian: 105000 },
-  { month: "Mar", mediterranean: 215000, caribbean: 285000, pacific: 195000, indian: 125000 },
-  { month: "Apr", mediterranean: 235000, caribbean: 305000, pacific: 215000, indian: 145000 },
-  { month: "May", mediterranean: 255000, caribbean: 325000, pacific: 235000, indian: 165000 },
-  { month: "Jun", mediterranean: 275000, caribbean: 345000, pacific: 255000, indian: 185000 },
-];
+function formatRevenue(num: number): string {
+  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `$${(num / 1_000).toFixed(1)}k`;
+  return `$${num.toLocaleString()}`;
+}
 
-const bookingsData = [
-  { region: "Mediterranean", bookings: 342, color: "#00C9B1" },
-  { region: "Caribbean", bookings: 487, color: "#F4A924" },
-  { region: "Pacific", bookings: 268, color: "#8B5CF6" },
-  { region: "Indian Ocean", bookings: 187, color: "#EC4899" },
-];
+function transformRevenueChartData(
+  labels: string[],
+  series: { name: string; data: number[] }[]
+): RevenueDataPoint[] {
+  if (!labels.length) return [];
+  return labels.map((label, i) => {
+    const row: RevenueDataPoint = { month: label };
+    series.forEach((s) => {
+      row[s.name] = s.data[i] ?? 0;
+    });
+    return row;
+  });
+}
 
-const fleetStatus = [
-  { id: "Y001", name: "Azure Majesty", image: "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?w=200&h=200&fit=crop", region: "Mediterranean", status: "available" as const },
-  { id: "Y002", name: "Ocean Serenity", image: "https://images.unsplash.com/photo-1605281317010-fe5ffe798166?w=200&h=200&fit=crop", region: "Caribbean", status: "booked" as const, nextAvailable: "Mar 5" },
-  { id: "Y003", name: "Golden Horizon", image: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=200&h=200&fit=crop", region: "Pacific", status: "available" as const },
-  { id: "Y004", name: "Royal Wave", image: "https://images.unsplash.com/photo-1473220464492-452fb02e6221?w=200&h=200&fit=crop", region: "Mediterranean", status: "booked" as const, nextAvailable: "Feb 28" },
-  { id: "Y005", name: "Crystal Dream", image: "https://images.unsplash.com/photo-1569263979104-865ab7cd8d13?w=200&h=200&fit=crop", region: "Indian Ocean", status: "maintenance" as const, nextAvailable: "Mar 15" },
-  { id: "Y006", name: "Sapphire Elite", image: "https://images.unsplash.com/photo-1540946485063-a40da27545f8?w=200&h=200&fit=crop", region: "Caribbean", status: "available" as const },
-  { id: "Y007", name: "Diamond Legacy", image: "https://images.unsplash.com/photo-1558281177-3e461c416e24?w=200&h=200&fit=crop", region: "Mediterranean", status: "booked" as const, nextAvailable: "Mar 1" },
-];
+function deriveWeekDaysFromBookings(
+  bookings: { startDate: string; endDate: string }[]
+): WeekDayEvent[] {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const days: WeekDayEvent[] = [];
 
-const recentBookings = [
-  { id: "BK2847", guestName: "Alexander Morrison", yacht: "Azure Majesty", region: "Mediterranean", startDate: "02/20", endDate: "02/27", amount: 48500, status: "confirmed" as const },
-  { id: "BK2846", guestName: "Victoria Laurent", yacht: "Ocean Serenity", region: "Caribbean", startDate: "02/22", endDate: "03/01", amount: 62000, status: "confirmed" as const },
-  { id: "BK2845", guestName: "James Richardson", yacht: "Golden Horizon", region: "Pacific", startDate: "02/19", endDate: "02/25", amount: 38900, status: "pending" as const },
-  { id: "BK2844", guestName: "Sophia Chen", yacht: "Royal Wave", region: "Mediterranean", startDate: "02/21", endDate: "02/28", amount: 55200, status: "confirmed" as const },
-  { id: "BK2843", guestName: "Marcus Sullivan", yacht: "Sapphire Elite", region: "Caribbean", startDate: "02/18", endDate: "02/24", amount: 47800, status: "completed" as const },
-  { id: "BK2842", guestName: "Isabella Rossi", yacht: "Diamond Legacy", region: "Mediterranean", startDate: "02/17", endDate: "02/21", amount: 32500, status: "cancelled" as const },
-];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() + i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const count = bookings.filter((b) => {
+      const start = b.startDate.slice(0, 10);
+      const end = b.endDate.slice(0, 10);
+      return dateStr >= start && dateStr <= end;
+    }).length;
+    days.push({
+      date: d.getDate().toString(),
+      dayName: dayNames[d.getDay()],
+      bookingCount: count,
+      isToday: i === 0,
+    });
+  }
+  return days;
+}
 
-const weekDays = [
-  { date: "17", dayName: "Mon", bookingCount: 8, isToday: false },
-  { date: "18", dayName: "Tue", bookingCount: 12, isToday: true },
-  { date: "19", dayName: "Wed", bookingCount: 9, isToday: false },
-  { date: "20", dayName: "Thu", bookingCount: 15, isToday: false },
-  { date: "21", dayName: "Fri", bookingCount: 18, isToday: false },
-  { date: "22", dayName: "Sat", bookingCount: 22, isToday: false },
-  { date: "23", dayName: "Sun", bookingCount: 19, isToday: false },
-];
-
-const topPackages = [
-  { rank: 1, name: "Mediterranean Luxury Week", region: "Mediterranean", bookings: 87, revenue: 425000, change: 24.5 },
-  { rank: 2, name: "Caribbean Paradise Cruise", region: "Caribbean", bookings: 102, revenue: 398000, change: 18.2 },
-  { rank: 3, name: "Pacific Island Hopping", region: "Pacific", bookings: 64, revenue: 312000, change: 15.7 },
-  { rank: 4, name: "Monaco Grand Prix Experience", region: "Mediterranean", bookings: 42, revenue: 285000, change: 32.1 },
-  { rank: 5, name: "Maldives Private Charter", region: "Indian Ocean", bookings: 38, revenue: 247000, change: 12.3 },
-];
-
+// PendingActions has no API - keep mock data
 const pendingActions = [
-  { id: "A001", type: "urgent" as const, title: "Payment Overdue", description: "Booking #BK2831 payment is 3 days overdue", time: "2 hours ago" },
-  { id: "A002", type: "warning" as const, title: "Maintenance Scheduled", description: "Crystal Dream requires inspection on Mar 15", time: "5 hours ago" },
-  { id: "A003", type: "info" as const, title: "New Inquiry", description: "VIP client interested in 2-week Mediterranean charter", time: "1 day ago" },
-  { id: "A004", type: "warning" as const, title: "Crew Assignment Pending", description: "Ocean Serenity needs captain for next booking", time: "1 day ago" },
+  { id: "A001", type: "urgent" as const, title: "Payment Overdue", description: "Booking payment is 3 days overdue", time: "2 hours ago" },
+  { id: "A002", type: "warning" as const, title: "Maintenance Scheduled", description: "Yacht requires inspection", time: "5 hours ago" },
+  { id: "A003", type: "info" as const, title: "New Inquiry", description: "VIP client interested in charter", time: "1 day ago" },
 ];
 
 export default function Dashboard() {
   const { colors } = useTheme();
 
+  const { data: stats, isLoading: statsLoading } = useDashboardStatsQuery("month");
+  const { data: revenueChart, isLoading: revenueLoading } = useRevenueChartQuery("month", "month");
+  const { data: bookingsByRegion, isLoading: bookingsRegionLoading } = useBookingsByRegionQuery();
+  const { data: fleetStatus, isLoading: fleetLoading } = useFleetStatusQuery();
+  const { data: upcomingData, isLoading: upcomingLoading } = useUpcomingBookingsQuery();
+  const { data: topPackagesData, isLoading: topPackagesLoading } = useTopPackagesQuery();
+
+  const upcomingBookings = upcomingData?.bookings ?? [];
+  const weekDays = deriveWeekDaysFromBookings(upcomingBookings);
+
+  const recentBookingsForTable: RecentBooking[] = upcomingBookings.map((b) => {
+    const guestName = b.customer
+      ? `${b.customer.firstName ?? ""} ${b.customer.lastName ?? ""}`.trim() || "—"
+      : "—";
+    const start = b.startDate ? new Date(b.startDate) : null;
+    const end = b.endDate ? new Date(b.endDate) : null;
+    const startStr = start ? `${String(start.getMonth() + 1).padStart(2, "0")}/${start.getDate()}` : "—";
+    const endStr = end ? `${String(end.getMonth() + 1).padStart(2, "0")}/${end.getDate()}` : "—";
+    const amount = typeof b.totalAmount === "number" ? b.totalAmount : Number(b.totalAmount) || 0;
+    const statusMap: Record<string, RecentBooking["status"]> = {
+      inquiry: "pending",
+      confirmed: "confirmed",
+      paid: "confirmed",
+      completed: "completed",
+      cancelled: "cancelled",
+    };
+    const status = statusMap[b.status] ?? "pending";
+    return {
+      id: b.bookingRef,
+      guestName,
+      yacht: b.yacht?.name ?? "—",
+      region: b.region?.name ?? "—",
+      startDate: startStr,
+      endDate: endStr,
+      amount,
+      status,
+    };
+  });
+
+  const bookingsDonutData: BookingsDonutItem[] = (bookingsByRegion ?? []).map((r, i) => ({
+    region: r.regionName,
+    bookings: r.count,
+    color: DONUT_COLORS[i % DONUT_COLORS.length],
+  }));
+
+  const revenueData = revenueChart
+    ? transformRevenueChartData(revenueChart.labels, revenueChart.series)
+    : [];
+
+  const topPackagesForList: TopPackageItem[] = (topPackagesData?.packages ?? []).map((p, i) => ({
+    rank: i + 1,
+    name: p.packageName,
+    region: "—",
+    bookings: 0,
+    revenue: p.revenueUsd,
+    change: 0,
+  }));
+
+  const fleetStatusItems = fleetStatus ?? [];
+  const emptySparkline = [{ value: 0 }, { value: 0 }, { value: 0 }, { value: 0 }, { value: 0 }];
+
+  if (statsLoading && !stats) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background }}>
+        <LoadingSpinner variant="fullScreen" size="lg" text="Loading dashboard..." />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
-      {/* Content Area - Sidebar & TopBar are in (root) layout */}
       <div className="pt-[72px] p-4 md:p-6 lg:p-8">
         {/* Row 1: KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
           <KPICard
             icon={Activity}
             label="Total Bookings"
-            value={kpiData.totalBookings.value}
-            change={kpiData.totalBookings.change}
-            sparklineData={kpiData.totalBookings.sparkline}
+            value={stats ? stats.bookings.toLocaleString() : "—"}
+            change={0}
+            sparklineData={emptySparkline}
           />
           <KPICard
             icon={DollarIcon}
-            label="Total Revenue"
-            value={kpiData.revenue.value}
-            change={kpiData.revenue.change}
-            sparklineData={kpiData.revenue.sparkline}
+            label="Total Revenue (this month)"
+            value={stats ? formatRevenue(stats.revenueUsd) : "—"}
+            change={0}
+            sparklineData={emptySparkline}
           />
           <KPICard
             icon={ShipIcon}
             label="Active Yachts"
-            value={kpiData.activeYachts.value}
-            change={kpiData.activeYachts.change}
-            sparklineData={kpiData.activeYachts.sparkline}
+            value={stats ? String(stats.fleet.total) : "—"}
+            change={0}
+            sparklineData={emptySparkline}
           />
           <KPICard
             icon={TrendingUp}
-            label="Avg. Booking Value"
-            value={kpiData.avgBookingValue.value}
-            change={kpiData.avgBookingValue.change}
-            sparklineData={kpiData.avgBookingValue.sparkline}
+            label="Occupancy"
+            value={stats ? `${stats.occupancyPercent}%` : "—"}
+            change={0}
+            sparklineData={emptySparkline}
           />
         </div>
 
@@ -157,24 +199,24 @@ export default function Dashboard() {
             <RevenueChart data={revenueData} />
           </div>
           <div>
-            <BookingsDonut data={bookingsData} />
+            <BookingsDonut data={bookingsDonutData} />
           </div>
         </div>
 
         {/* Row 3: Fleet Status + Weekly Calendar */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
-          <FleetStatusList items={fleetStatus} />
+          <FleetStatusSummary items={fleetStatusItems} />
           <WeeklyCalendar events={weekDays} />
         </div>
 
-        {/* Row 4: Recent Bookings */}
+        {/* Row 4: Upcoming Bookings */}
         <div className="mb-6 md:mb-8">
-          <RecentBookingsTable bookings={recentBookings} />
+          <RecentBookingsTable bookings={recentBookingsForTable} />
         </div>
 
         {/* Row 5: Top Packages + Pending Actions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-          <TopPackages packages={topPackages} />
+          <TopPackages packages={topPackagesForList} />
           <PendingActions actions={pendingActions} />
         </div>
       </div>

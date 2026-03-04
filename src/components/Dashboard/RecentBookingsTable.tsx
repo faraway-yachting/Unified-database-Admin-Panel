@@ -68,13 +68,13 @@ export function RecentBookingsTable({ bookings }: RecentBookingsTableProps) {
           className="text-lg font-bold mb-1"
           style={{ color: colors.textPrimary }}
         >
-          Recent Bookings
+          Upcoming Bookings
         </h3>
         <p
           className="text-sm"
           style={{ color: colors.textSecondary }}
         >
-          Latest reservation activity
+          Next 7 days
         </p>
       </div>
 

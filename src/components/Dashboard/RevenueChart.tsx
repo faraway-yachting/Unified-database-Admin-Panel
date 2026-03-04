@@ -11,20 +11,41 @@ import {
 } from "recharts";
 import { useTheme } from "@/context/ThemeContext";
 
+const REGION_COLORS = [
+  "#00C9B1",
+  "#F4A924",
+  "#8B5CF6",
+  "#EC4899",
+  "#3B82F6",
+  "#10B981",
+];
+
 export interface RevenueDataPoint {
   month: string;
-  mediterranean: number;
-  caribbean: number;
-  pacific: number;
-  indian: number;
+  [key: string]: string | number;
+}
+
+export interface RevenueSeriesConfig {
+  dataKey: string;
+  color: string;
 }
 
 interface RevenueChartProps {
   data: RevenueDataPoint[];
+  seriesConfig?: RevenueSeriesConfig[];
 }
 
-export function RevenueChart({ data }: RevenueChartProps) {
+export function RevenueChart({ data, seriesConfig }: RevenueChartProps) {
   const { colors } = useTheme();
+
+  const series = seriesConfig ?? (data.length
+    ? Object.keys(data[0])
+        .filter((k) => k !== "month")
+        .map((k, i) => ({
+          dataKey: k,
+          color: REGION_COLORS[i % REGION_COLORS.length],
+        }))
+    : []);
 
   return (
     <div
@@ -34,7 +55,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
         borderColor: colors.cardBorder,
       }}
     >
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-6 flex-wrap gap-2">
         <div>
           <h3
             className="text-lg font-bold mb-1"
@@ -49,108 +70,82 @@ export function RevenueChart({ data }: RevenueChartProps) {
             Monthly breakdown across all regions
           </p>
         </div>
-        <div className="flex gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: colors.accent }}
-            />
-            <span style={{ color: colors.textSecondary }}>Mediterranean</span>
+        {series.length > 0 && (
+          <div className="flex gap-4 text-xs flex-wrap">
+            {series.map((s) => (
+              <div key={s.dataKey} className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ backgroundColor: s.color }}
+                />
+                <span style={{ color: colors.textSecondary }}>{s.dataKey}</span>
+              </div>
+            ))}
           </div>
-          <div className="flex items-center gap-2">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: colors.accentGold }}
-            />
-            <span style={{ color: colors.textSecondary }}>Caribbean</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#8B5CF6]" />
-            <span style={{ color: colors.textSecondary }}>Pacific</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#EC4899]" />
-            <span style={{ color: colors.textSecondary }}>Indian Ocean</span>
-          </div>
-        </div>
+        )}
       </div>
 
-      <ResponsiveContainer width="100%" height={260}>
-        <AreaChart data={data}>
-          <defs>
-            <linearGradient id="mediterranean" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={colors.accent} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={colors.accent} stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="caribbean" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={colors.accentGold} stopOpacity={0.3} />
-              <stop offset="95%" stopColor={colors.accentGold} stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="pacific" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="indian" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#EC4899" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#EC4899" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke={colors.chartGrid} />
-          <XAxis
-            dataKey="month"
-            stroke={colors.textSecondary}
-            style={{ fontSize: "12px", fontFamily: "monospace" }}
-          />
-          <YAxis
-            stroke={colors.textSecondary}
-            style={{ fontSize: "12px", fontFamily: "monospace" }}
-            tickFormatter={(value) => `$${value / 1000}k`}
-          />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: colors.cardBg,
-              border: `1px solid ${colors.cardBorder}`,
-              borderRadius: "8px",
-              fontFamily: "monospace",
-              fontSize: "12px",
-              color: colors.textPrimary,
-            }}
-            formatter={(value: number) => `$${Number(value).toLocaleString()}`}
-          />
-          <Area
-            type="monotone"
-            dataKey="mediterranean"
-            stroke={colors.accent}
-            fillOpacity={1}
-            fill="url(#mediterranean)"
-            strokeWidth={2}
-          />
-          <Area
-            type="monotone"
-            dataKey="caribbean"
-            stroke={colors.accentGold}
-            fillOpacity={1}
-            fill="url(#caribbean)"
-            strokeWidth={2}
-          />
-          <Area
-            type="monotone"
-            dataKey="pacific"
-            stroke="#8B5CF6"
-            fillOpacity={1}
-            fill="url(#pacific)"
-            strokeWidth={2}
-          />
-          <Area
-            type="monotone"
-            dataKey="indian"
-            stroke="#EC4899"
-            fillOpacity={1}
-            fill="url(#indian)"
-            strokeWidth={2}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      {data.length > 0 && series.length > 0 ? (
+        <ResponsiveContainer width="100%" height={260}>
+          <AreaChart data={data}>
+            <defs>
+              {series.map((s) => (
+                <linearGradient
+                  key={s.dataKey}
+                  id={`gradient-${s.dataKey}`}
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="5%" stopColor={s.color} stopOpacity={0.3} />
+                  <stop offset="95%" stopColor={s.color} stopOpacity={0} />
+                </linearGradient>
+              ))}
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke={colors.chartGrid} />
+            <XAxis
+              dataKey="month"
+              stroke={colors.textSecondary}
+              style={{ fontSize: "12px", fontFamily: "monospace" }}
+            />
+            <YAxis
+              stroke={colors.textSecondary}
+              style={{ fontSize: "12px", fontFamily: "monospace" }}
+              tickFormatter={(value) => `$${value / 1000}k`}
+            />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: colors.cardBg,
+                border: `1px solid ${colors.cardBorder}`,
+                borderRadius: "8px",
+                fontFamily: "monospace",
+                fontSize: "12px",
+                color: colors.textPrimary,
+              }}
+              formatter={(value: number) => `$${Number(value).toLocaleString()}`}
+            />
+            {series.map((s) => (
+              <Area
+                key={s.dataKey}
+                type="monotone"
+                dataKey={s.dataKey}
+                stroke={s.color}
+                fillOpacity={1}
+                fill={`url(#gradient-${s.dataKey})`}
+                strokeWidth={2}
+              />
+            ))}
+          </AreaChart>
+        </ResponsiveContainer>
+      ) : (
+        <div
+          className="flex items-center justify-center h-[260px] text-sm"
+          style={{ color: colors.textSecondary }}
+        >
+          No revenue data to display
+        </div>
+      )}
     </div>
   );
 }

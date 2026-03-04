@@ -221,6 +221,14 @@ export const config = {
         step: (sequenceId: string, stepId: string) => url(`/api/crm/sequences/${sequenceId}/steps/${stepId}`),
       },
     },
+    dashboard: {
+      stats: url('/api/dashboard/stats'),
+      revenueChart: url('/api/dashboard/revenue-chart'),
+      bookingsByRegion: url('/api/dashboard/bookings-by-region'),
+      fleetStatus: url('/api/dashboard/fleet-status'),
+      upcomingBookings: url('/api/dashboard/upcoming-bookings'),
+      topPackages: url('/api/dashboard/top-packages'),
+    },
     settings: {
       general: {
         get: url('/api/settings/general'),

@@ -1,6 +1,6 @@
-const BASE_API_URL =(typeof import.meta !== 'undefined' && (import.meta as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL) ||
-  (typeof process !== 'undefined' && (process as { env?: { VITE_API_URL?: string } }).env?.VITE_API_URL) ||
-  'http://localhost:5000';
+const BASE_API_URL =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL?.trim()) ||
+  "http://localhost:5000";
 
 function url(path: string): string {
   const p = path.startsWith('/') ? path : `/${path}`;

@@ -36,6 +36,6 @@ apiClient.interceptors.response.use(
   }
 );
 
-export function getAuthHeaders(): { Authorization: string } | {} {
+export function getAuthHeaders(): { Authorization?: string } {
   return {};
 }

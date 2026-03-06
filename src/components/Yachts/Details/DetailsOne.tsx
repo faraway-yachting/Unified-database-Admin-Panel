@@ -2,10 +2,10 @@
 
 import Image from "next/image";
 import { IoEyeOutline } from "react-icons/io5";
-import type { YachtsApiResponse } from "@/lib/api/yachts";
+import type { YachtListItem } from "@/lib/api/yachts";
 
 interface YachtProps {
-    yacht?: YachtsApiResponse | null;
+    yacht?: YachtListItem | null;
 }
 
 function getEmbedUrl(url?: string) {
@@ -30,8 +30,8 @@ const Yachts: React.FC<YachtProps> = ({ yacht: yachts }) => {
                     Primary Image
                 </p>
                 <div className="border border-[#CCCCCC] p-1.5 rounded-lg flex justify-center">
-                    {yachts?.primaryImage ? (
-                        <Image src={yachts.primaryImage} alt="img" width={296} height={158} className="rounded-lg" />
+                    {(yachts?.images?.find((i) => i.isCover)?.imageUrl ?? yachts?.images?.[0]?.imageUrl) ? (
+                        <Image src={yachts.images?.find((i) => i.isCover)?.imageUrl ?? yachts.images?.[0]?.imageUrl ?? ""} alt="img" width={296} height={158} className="rounded-lg" />
                     ) : <p className="text-gray-500 p-4">No featured image</p>}
                 </div>
             </div>
@@ -40,13 +40,12 @@ const Yachts: React.FC<YachtProps> = ({ yacht: yachts }) => {
                     Gallery Images
                 </p>
                 <div className="border border-[#CCCCCC] p-1.5 rounded-lg flex justify-center">
-                    {Array.isArray(yachts?.galleryImages) && (
+                    {Array.isArray(yachts?.images) && yachts.images.length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                            {yachts?.galleryImages.map((url: string, index: number) => (
-                                <div key={index} className="w-full h-auto">
+                            {yachts.images.map((img, index: number) => (
+                                <div key={img.id ?? index} className="w-full h-auto">
                                     <Image
-                                        key={index}
-                                        src={url}
+                                        src={img.imageUrl}
                                         alt={`Vehicle Image ${index + 1}`}
                                         width={400}
                                         height={250}
@@ -62,8 +61,8 @@ const Yachts: React.FC<YachtProps> = ({ yacht: yachts }) => {
                         className="rounded-full px-[16px] py-[7px] bg-[#001B48] flex items-center gap-2 hover:bg-[#222222] text-white text-center cursor-pointer font-medium"
                         onClick={() => {
                             if (
-                                yachts?.galleryImages &&
-                                Array.isArray(yachts.galleryImages)
+                                yachts?.images &&
+                                Array.isArray(yachts.images)
                             ) {
                                 const html = `
                                 <html>
@@ -86,8 +85,8 @@ const Yachts: React.FC<YachtProps> = ({ yacht: yachts }) => {
                                     </style>
                                   </head>
                                   <body>
-                                    ${yachts.galleryImages
-                                        .map((url) => `<img src="${url}" alt="Vehicle Image" />`)
+                                    ${yachts.images
+                                        .map((img) => `<img src="${img.imageUrl}" alt="Vehicle Image" />`)
                                         .join("")}
                                   </body>
                                 </html>
@@ -104,15 +103,15 @@ const Yachts: React.FC<YachtProps> = ({ yacht: yachts }) => {
                     </button>
                 </div>
             </div>
-            {yachts?.videoLink && yachts.videoLink.length > 0 && (
+            {(yachts as { videoLink?: string })?.videoLink?.trim() && (
                 <div className="bg-white shadow-xs rounded-lg px-2 py-2 w-full">
                     <p className="text-[#001B48] font-bold text-[18px] mb-2 pb-2 border-b border-[#CCCCCC]">
                         Video URL
                     </p>
                     <div className="border border-[#CCCCCC] p-1.5 rounded-lg flex justify-center">
-                        {yachts?.videoLink ? (
+                        {(yachts as { videoLink?: string })?.videoLink ? (
                             <iframe
-                                src={getEmbedUrl(yachts.videoLink)}
+                                src={getEmbedUrl((yachts as { videoLink?: string }).videoLink)}
                                 width="296"
                                 height="158"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"

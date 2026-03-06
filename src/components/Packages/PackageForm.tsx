@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, Upload, X, Star } from "lucide-react";
+import { ChevronDown, X, Star } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useYachtsQuery } from "@/lib/api/yachts";
 import { useCreatePackageMutation } from "@/lib/api/packages";

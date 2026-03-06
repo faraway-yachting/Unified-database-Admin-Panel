@@ -27,7 +27,7 @@ const ForgetPasswordForm: React.FC = () => {
             email: "",
         },
         validationSchema: validationSchema,
-        onSubmit: async (values, { resetForm, setSubmitting, setFieldError }) => {
+        onSubmit: async (values, { resetForm, setSubmitting }) => {
             try {
                 const result = await forgotPasswordMutation.mutateAsync({
                     email: values.email,

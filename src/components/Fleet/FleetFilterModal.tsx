@@ -97,10 +97,7 @@ export function FleetFilterModal({ open, onOpenChange }: FleetFilterModalProps) 
               value={form.regionId}
               onChange={(e) => update({ regionId: e.target.value })}
               className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2"
-              style={{
-                ...inputStyle,
-                focusRing: colors.accent,
-              }}
+              style={inputStyle}
               disabled={regionsLoading}
             >
               <option value="">All regions</option>

@@ -3,21 +3,11 @@
 import { useRouter } from "next/navigation";
 import { MdEdit, MdKeyboardArrowLeft } from "react-icons/md";
 import DOMPurify from 'dompurify';
-import type { YachtsApiResponse } from "@/lib/api/yachts";
+import type { YachtListItem } from "@/lib/api/yachts";
 
 interface CustomersProps {
     goToNextTab: () => void;
-    yacht?: YachtsApiResponse | null;
-}
-
-function formatDateToDDMMYY(dateString?: string) {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return dateString;
-    const dd = String(date.getDate()).padStart(2, '0');
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const yy = String(date.getFullYear()).slice(-2);
-    return `${dd}/${mm}/${yy}`;
+    yacht?: YachtListItem | null;
 }
 
 const Yachts: React.FC<CustomersProps> = ({ goToNextTab, yacht: yachts }) => {
@@ -27,30 +17,12 @@ const Yachts: React.FC<CustomersProps> = ({ goToNextTab, yacht: yachts }) => {
     const GeneralInfoData = [
         {
             array: [
-                { label: "Title", data: yachts?.title || "N/A" },
-                { label: "Boat Type", data: yachts?.boatType || "N/A" },
+                { label: "Title", data: yachts?.name || "N/A" },
                 { label: "Yacht Type", data: yachts?.type || "N/A" },
-                { label: "Category", data: yachts?.price || "N/A" },
-                { label: "Capacity", data: yachts?.capacity || "N/A" },
-                { label: "Length", data: `${yachts?.length}ft` || "N/A" },
-                { label: "Cabins", data: yachts?.cabins || "N/A" },
-                { label: "Bathrooms", data: yachts?.bathrooms || "N/A" },
-                { label: "Passenger Day Trip", data: yachts?.passengerDayTrip || "N/A" },
-                { label: "Passenger Overnight", data: yachts?.passengerOvernight || "N/A" },
-                { label: "Guests", data: yachts?.guests || "N/A" },
-                { label: "Guests Range", data: yachts?.guestsRange || "N/A" },
-                { label: "Day Trip Price", data: yachts?.dayTripPrice || "N/A" },
-                { label: "Overnight Price", data: yachts?.overnightPrice || "N/A" },
-                { label: "Day Trip Price Euro", data: `${yachts?.daytripPriceEuro}€` || "N/A" },
-                { label: "Length Range", optional: "(Optional)", data: yachts?.lengthRange || "N/A" },
-                { label: "Badge", optional: "(Optional)", data: yachts?.badge || "N/A" },
-                { label: "Built", optional: "(Optional)", data: formatDateToDDMMYY(yachts?.built || "N/A") },
-                { label: "Design", optional: "(Optional)", data: yachts?.design || "N/A" },
-                { label: "Cruising Speed", optional: "(Optional)", data: yachts?.cruisingSpeed || "N/A" },
-                { label: "Length Overall", optional: "(Optional)", data: yachts?.lengthOverall || "N/A" },
-                { label: "Fuel Capacity", optional: "(Optional)", data: yachts?.fuelCapacity || "N/A" },
-                { label: "Water Capacity", optional: "(Optional)", data: yachts?.waterCapacity || "N/A" },
-                { label: "Code", optional: "(Optional)", data: yachts?.code || "N/A" },
+                { label: "Capacity", data: yachts?.capacityGuests != null ? String(yachts.capacityGuests) : "N/A" },
+                { label: "Length", data: yachts?.lengthM != null ? `${yachts.lengthM}ft` : "N/A" },
+                { label: "Year Built", optional: "(Optional)", data: yachts?.yearBuilt != null ? String(yachts.yearBuilt) : "N/A" },
+                { label: "Status", data: yachts?.status || "N/A" },
             ],
             iconone: MdKeyboardArrowLeft,
             btn: "Back",
@@ -81,7 +53,7 @@ const Yachts: React.FC<CustomersProps> = ({ goToNextTab, yacht: yachts }) => {
                     <div className="mt-4">
                         <h2 className="font-bold text-[#222222] mb-4">Tags</h2>
                         <div className="space-y-2">
-                            {yachts?.tags?.map((tag) => (
+                            {(yachts as { tags?: string[] })?.tags?.map((tag) => (
                                 <div key={tag} className="flex items-center">
                                     <span className="text-[#222222] mr-2">•</span>
                                     <span className="text-[#222222] font-medium text-[14px]">{tag}</span>
@@ -89,48 +61,48 @@ const Yachts: React.FC<CustomersProps> = ({ goToNextTab, yacht: yachts }) => {
                             ))}
                         </div>
                     </div>
-                    {yachts?.dayCharter?.trim() && (
+                    {(yachts as { dayCharter?: string })?.dayCharter?.trim() && (
                         <div className="mt-4">
                             <h2 className="font-bold text-[#222222] mb-4">Day Charter</h2>
                             <div
                                 className="prose max-w-full"
-                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(yachts.dayCharter || "") }}
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((yachts as { dayCharter?: string }).dayCharter || "") }}
                             />
                         </div>
                     )}
-                    {yachts?.overnightCharter?.trim() && (
+                    {(yachts as { overnightCharter?: string })?.overnightCharter?.trim() && (
                         <div className="mt-4">
                             <h2 className="font-bold text-[#222222] mb-4">Overnight Charter</h2>
                             <div
                                 className="prose max-w-full"
-                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(yachts.overnightCharter || "") }}
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((yachts as { overnightCharter?: string }).overnightCharter || "") }}
                             />
                         </div>
                     )}
-                    {yachts?.aboutThisBoat?.trim() && (
+                    {(yachts as { aboutThisBoat?: string })?.aboutThisBoat?.trim() && (
                         <div className="mt-4">
                             <h2 className="font-bold text-[#222222] mb-4">About this Boat</h2>
                             <div
                                 className="prose max-w-full"
-                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(yachts.aboutThisBoat || "") }}
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((yachts as { aboutThisBoat?: string }).aboutThisBoat || "") }}
                             />
                         </div>
                     )}
-                    {yachts?.specifications?.trim() && (
+                    {(yachts as { specifications?: string })?.specifications?.trim() && (
                         <div className="mt-4">
                             <h2 className="font-bold text-[#222222] mb-4">Specifications</h2>
                             <div
                                 className="prose max-w-full"
-                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(yachts.specifications || "") }}
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize((yachts as { specifications?: string }).specifications || "") }}
                             />
                         </div>
                     )}
-                    {yachts?.boatLayout?.trim() && (
+                    {(yachts as { boatLayout?: string })?.boatLayout?.trim() && (
                         <div className="mt-4">
                             <h2 className="font-bold text-[#222222] mb-4">Boat Layout</h2>
                             <div
                                 className="prose max-w-full"
-                                dangerouslySetInnerHTML={{ __html: yachts.boatLayout }}
+                                dangerouslySetInnerHTML={{ __html: (yachts as { boatLayout?: string }).boatLayout || "" }}
                             />
                         </div>
                     )}

@@ -602,7 +602,7 @@ export default function BookingEngine() {
               Delete booking?
             </h3>
             <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
-              This will permanently delete "{pendingDelete.bookingRef}". This action cannot be undone.
+              This will permanently delete &quot;{pendingDelete.bookingRef}&quot;. This action cannot be undone.
             </p>
             <div className="flex justify-end gap-2">
               <button

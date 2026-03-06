@@ -100,11 +100,11 @@ export function PricingRuleEditDrawer({ ruleId, isOpen, onClose }: PricingRuleEd
     try {
       await updatePricingRule(ruleId, {
         name: form.name.trim(),
-        packageId: form.packageId || null,
-        regionId: form.regionId || null,
+        packageId: form.packageId || undefined,
+        regionId: form.regionId || undefined,
         ruleType: form.ruleType,
-        multiplier: form.multiplier ? Number(form.multiplier) : null,
-        fixedAdjustment: form.fixedAdjustment ? Number(form.fixedAdjustment) : null,
+        multiplier: form.multiplier ? Number(form.multiplier) : undefined,
+        fixedAdjustment: form.fixedAdjustment ? Number(form.fixedAdjustment) : undefined,
         startDate: form.startDate,
         endDate: form.endDate,
         priority: form.priority ? Number(form.priority) : 0,

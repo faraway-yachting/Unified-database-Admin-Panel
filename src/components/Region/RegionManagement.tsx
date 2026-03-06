@@ -330,7 +330,7 @@ export default function RegionManagement() {
               Delete region?
             </h3>
             <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
-              This will permanently delete "{pendingDelete.city}".
+              This will permanently delete &quot;{pendingDelete.city}&quot;.
             </p>
             <div className="flex justify-end gap-2">
               <button

@@ -129,7 +129,7 @@ const IndexLayout: React.FC<Props> = ({ children }) => {
     >
       <Sidebar
         navItems={dashboardNavItems}
-        adminName={[user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.email ?? ""}
+        adminName={([user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.email) ?? ""}
         adminRole={formatRole(user?.role ?? "")}
         adminAvatar={user?.avatarUrl}
       />

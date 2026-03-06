@@ -230,7 +230,7 @@ export function BookingDetailPanel({ booking, onClose }: BookingDetailPanelProps
                 style={{ color: colors.accent }}
               />
               <span>
-                {booking.checkIn} - {booking.checkOut}
+                {booking.startDate} - {booking.endDate}
               </span>
             </div>
           </div>

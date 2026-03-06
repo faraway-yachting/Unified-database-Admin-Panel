@@ -11,13 +11,6 @@ interface FleetStatusSummaryProps {
   items: FleetStatusCount[];
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  available: "Available",
-  booked: "Booked",
-  maintenance: "Maintenance",
-  retired: "Retired",
-};
-
 export function FleetStatusSummary({ items }: FleetStatusSummaryProps) {
   const { colors } = useTheme();
 

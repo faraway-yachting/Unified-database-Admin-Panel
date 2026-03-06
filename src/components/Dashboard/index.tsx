@@ -90,11 +90,11 @@ export default function Dashboard() {
   const { colors } = useTheme();
 
   const { data: stats, isLoading: statsLoading } = useDashboardStatsQuery("month");
-  const { data: revenueChart, isLoading: revenueLoading } = useRevenueChartQuery("month", "month");
-  const { data: bookingsByRegion, isLoading: bookingsRegionLoading } = useBookingsByRegionQuery();
-  const { data: fleetStatus, isLoading: fleetLoading } = useFleetStatusQuery();
-  const { data: upcomingData, isLoading: upcomingLoading } = useUpcomingBookingsQuery();
-  const { data: topPackagesData, isLoading: topPackagesLoading } = useTopPackagesQuery();
+  const { data: revenueChart } = useRevenueChartQuery("month", "month");
+  const { data: bookingsByRegion } = useBookingsByRegionQuery();
+  const { data: fleetStatus } = useFleetStatusQuery();
+  const { data: upcomingData } = useUpcomingBookingsQuery();
+  const { data: topPackagesData } = useTopPackagesQuery();
 
   const upcomingBookings = upcomingData?.bookings ?? [];
   const weekDays = deriveWeekDaysFromBookings(upcomingBookings);

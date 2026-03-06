@@ -6,7 +6,6 @@ import {
   Trash2,
   FileText,
   Shield,
-  Calendar,
   CheckCircle2,
 } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
@@ -117,12 +116,12 @@ export function YachtEditDrawer({ yacht, onClose }: YachtEditDrawerProps) {
 
   const bookingCustomerResults = bookingCustomerSearchData?.customers ?? [];
 
-  if (!yacht) return null;
-
   const images = useMemo(() => {
     const detailImages = detail?.images ?? [];
     return detailImages;
   }, [detail?.images]);
+
+  if (!yacht) return null;
 
   const amenities = detail?.amenities ?? [];
   const documents = detail?.documents ?? [];

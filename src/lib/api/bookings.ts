@@ -52,7 +52,7 @@ export interface BookingListItem {
   customer?: { firstName?: string; lastName?: string };
   yacht?: { name?: string };
   package?: { name?: string };
-  region?: { name?: string };
+  region?: { id?: string; name?: string };
   currency?: { code?: string; symbol?: string };
 }
 
@@ -127,8 +127,10 @@ export interface BookingDetail extends BookingListItem {
   };
   yacht?: { name?: string; type?: string };
   package?: { name?: string };
-  region?: { name?: string; slug?: string };
+  region?: { id?: string; name?: string; slug?: string };
   currency?: { code?: string; symbol?: string };
+  agent?: { id?: string };
+  promoCode?: { id?: string };
 }
 
 export interface BookingsListResponse {

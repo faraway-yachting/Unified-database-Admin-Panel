@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Image from "next/image";
-import { X, FileText, ImageIcon, Film, Star } from "lucide-react";
+import { X, FileText, Film, Star } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { usePackageDetailQuery } from "@/lib/api/packages";
 import LoadingSpinner from "@/components/common/LoadingSpinner";

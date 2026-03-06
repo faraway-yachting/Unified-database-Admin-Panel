@@ -71,111 +71,6 @@ const formatDateOnly = (value?: string | null) => {
   return date.toLocaleDateString();
 };
 
-const topPackages: TopPackage[] = [
-  {
-    rank: 1,
-    name: "Mediterranean Sunset Experience",
-    region: "Mediterranean",
-    totalBookings: 145,
-    totalRevenue: 558250,
-    avgBookingValue: 3850,
-    occupancyRate: 92,
-    trendData: [
-      { value: 35 },
-      { value: 42 },
-      { value: 38 },
-      { value: 51 },
-      { value: 48 },
-      { value: 62 },
-    ],
-  },
-  {
-    rank: 2,
-    name: "Caribbean Full Day Adventure",
-    region: "Caribbean",
-    totalBookings: 128,
-    totalRevenue: 665600,
-    avgBookingValue: 5200,
-    occupancyRate: 88,
-    trendData: [
-      { value: 28 },
-      { value: 35 },
-      { value: 32 },
-      { value: 45 },
-      { value: 42 },
-      { value: 58 },
-    ],
-  },
-  {
-    rank: 3,
-    name: "Weekly Luxury Cruise",
-    region: "Mediterranean",
-    totalBookings: 48,
-    totalRevenue: 1368000,
-    avgBookingValue: 28500,
-    occupancyRate: 85,
-    trendData: [
-      { value: 18 },
-      { value: 25 },
-      { value: 22 },
-      { value: 32 },
-      { value: 28 },
-      { value: 42 },
-    ],
-  },
-  {
-    rank: 4,
-    name: "Island Hopping Package",
-    region: "Pacific",
-    totalBookings: 96,
-    totalRevenue: 403200,
-    avgBookingValue: 4200,
-    occupancyRate: 78,
-    trendData: [
-      { value: 22 },
-      { value: 28 },
-      { value: 25 },
-      { value: 35 },
-      { value: 32 },
-      { value: 45 },
-    ],
-  },
-  {
-    rank: 5,
-    name: "Corporate Event Package",
-    region: "Caribbean",
-    totalBookings: 82,
-    totalRevenue: 389500,
-    avgBookingValue: 4750,
-    occupancyRate: 72,
-    trendData: [
-      { value: 18 },
-      { value: 24 },
-      { value: 22 },
-      { value: 28 },
-      { value: 26 },
-      { value: 38 },
-    ],
-  },
-  {
-    rank: 6,
-    name: "Romantic Dinner Cruise",
-    region: "Indian Ocean",
-    totalBookings: 118,
-    totalRevenue: 283200,
-    avgBookingValue: 2400,
-    occupancyRate: 68,
-    trendData: [
-      { value: 15 },
-      { value: 22 },
-      { value: 18 },
-      { value: 28 },
-      { value: 24 },
-      { value: 35 },
-    ],
-  },
-];
-
 export default function PricingRevenue() {
   const { colors } = useTheme();
   const queryClient = useQueryClient();
@@ -797,7 +692,7 @@ export default function PricingRevenue() {
               Delete promo code?
             </h3>
             <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
-              This will permanently delete "{pendingPromoDelete.code}".
+              This will permanently delete &quot;{pendingPromoDelete.code}&quot;.
             </p>
             <div className="flex justify-end gap-2">
               <button
@@ -834,7 +729,7 @@ export default function PricingRevenue() {
               Delete agent?
             </h3>
             <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
-              This will permanently delete "{pendingAgentDelete.agentName}".
+              This will permanently delete &quot;{pendingAgentDelete.agentName}&quot;.
             </p>
             <div className="flex justify-end gap-2">
               <button

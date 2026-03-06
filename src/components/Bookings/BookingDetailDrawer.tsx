@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { X, Calendar, User, Ship, Package, MapPin, DollarSign } from "lucide-react";
+import { X, Calendar, User, Ship, Package, MapPin } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useBookingDetailQuery } from "@/lib/api/bookings";
 import LoadingSpinner from "@/components/common/LoadingSpinner";

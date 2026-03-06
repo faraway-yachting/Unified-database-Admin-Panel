@@ -82,11 +82,11 @@ export function AuditLog() {
     Object.keys(filters).length ? filters : undefined
   );
 
-  const auditLogs = data?.auditLogs ?? [];
   const total = data?.total ?? 0;
   const totalPages = data?.totalPages ?? 0;
 
   const filteredLogs = useMemo(() => {
+    const auditLogs = data?.auditLogs ?? [];
     if (!search.trim()) return auditLogs;
     const term = search.trim().toLowerCase();
     return auditLogs.filter((log) => {
@@ -96,7 +96,7 @@ export function AuditLog() {
       const desc = (log.description ?? "").toLowerCase();
       return userStr.includes(term) || desc.includes(term);
     });
-  }, [auditLogs, search]);
+  }, [data?.auditLogs, search]);
 
   const handleFilterChange = () => {
     setPage(1);

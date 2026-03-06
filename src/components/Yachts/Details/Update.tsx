@@ -242,7 +242,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
         const galleryImages = Array.isArray(values["Gallery Images"])
           ? values["Gallery Images"].map((item: ImageItem) => item.value)
           : [];
-        const result = await updateYachtMutation.mutateAsync({
+        await updateYachtMutation.mutateAsync({
           payload: {
             boatType: values["Boat Type"] ?? "",
             price: values["Category"] ?? "",

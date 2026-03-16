@@ -35,7 +35,7 @@ function apiYachtToCardYacht(api: YachtListItem): Yacht {
   const rawLength = api.length ?? api.lengthOverall ?? null;
   const lengthVal = rawLength != null ? parseFloat(String(rawLength)) : 0;
 
-  const capacityVal = api.guests ?? (api.capacity ? parseInt(String(api.capacity), 10) : 0) ?? 0;
+  const capacityVal = parseInt(String(api.guests ?? api.capacity ?? "0"), 10) || 0;
 
   return {
     id: api.id,

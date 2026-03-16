@@ -77,13 +77,19 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
         );
     }
 
+    const guestsVal = y?.guests ?? (y?.capacityGuests != null ? String(y.capacityGuests) : undefined);
+    const lengthVal = y?.length ? `${y.length}ft` : (y?.lengthM != null ? `${y.lengthM}m` : undefined);
+    const builtVal = y?.built ?? (y?.yearBuilt != null ? String(y.yearBuilt) : undefined);
+    const cruiseVal = y?.cruisingSpeed ?? (y?.cruiseSpeedKnots != null ? `${y.cruiseSpeedKnots} knots` : undefined);
+    const fuelVal = y?.fuelCapacity ?? (y?.fuelCapacityL != null ? `${y.fuelCapacityL}L` : undefined);
+
     const leftFields = [
         { label: "Title", value: title },
         { label: "Yacht Type", value: y?.type },
         { label: "Capacity", value: y?.capacity },
         { label: "Cabins", value: y?.cabins ?? undefined },
         { label: "Passenger Day Trip", value: y?.passengerDayTrip ?? undefined },
-        { label: "Guests", value: y?.guests ?? undefined },
+        { label: "Guests", value: guestsVal },
         { label: "Day Trip Price", value: y?.dayTripPrice ?? undefined },
         { label: "Day Trip Price Euro", value: y?.daytripPriceEuro ? `${y.daytripPriceEuro}€` : undefined },
     ];
@@ -91,17 +97,17 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
     const rightFields = [
         { label: "Boat Type", value: y?.boatType ?? undefined },
         { label: "Charter Type", value: y?.charterType ?? undefined },
-        { label: "Length", value: y?.length ? `${y.length}ft` : undefined },
+        { label: "Length", value: lengthVal },
         { label: "Bathrooms", value: y?.bathrooms ?? undefined },
         { label: "Passenger Overnight", value: y?.passengerOvernight ?? undefined },
         { label: "Guests Range", value: y?.guestsRange ?? undefined },
         { label: "Overnight Price", value: y?.overnightPrice ?? undefined },
         { label: "Length Range", value: y?.lengthRange ?? undefined, optional: true },
-        { label: "Cruising Speed", value: y?.cruisingSpeed ?? undefined },
-        { label: "Fuel Capacity", value: y?.fuelCapacity ?? undefined },
+        { label: "Cruising Speed", value: cruiseVal },
+        { label: "Fuel Capacity", value: fuelVal },
         { label: "Water Capacity", value: y?.waterCapacity ?? undefined },
         { label: "Design", value: y?.design ?? undefined },
-        { label: "Built", value: y?.built ?? undefined },
+        { label: "Built", value: builtVal },
         { label: "Badge", value: y?.badge ?? undefined },
         { label: "Code", value: y?.code ?? undefined },
         { label: "Status", value: y?.status },

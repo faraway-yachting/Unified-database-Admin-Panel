@@ -32,10 +32,10 @@ function apiYachtToCardYacht(api: YachtListItem): Yacht {
   const legacyUrls = api.images?.map(i => i.imageUrl).filter(Boolean);
   const images = (galleryUrls?.length ? galleryUrls : legacyUrls) ?? undefined;
 
-  const rawLength = api.length ?? api.lengthOverall ?? null;
+  const rawLength = api.length ?? api.lengthOverall ?? (api.lengthM != null ? String(api.lengthM) : null) ?? null;
   const lengthVal = rawLength != null ? parseFloat(String(rawLength)) : 0;
 
-  const capacityVal = parseInt(String(api.guests ?? api.capacity ?? "0"), 10) || 0;
+  const capacityVal = parseInt(String(api.guests ?? api.capacityGuests ?? api.capacity ?? "0"), 10) || 0;
 
   return {
     id: api.id,

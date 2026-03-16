@@ -35,9 +35,11 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
     const { colors } = useTheme();
     const [editing, setEditing] = useState(defaultEdit);
     const [richHtml, setRichHtml] = useState<Record<string, string>>({});
+    const [locale, setLocale] = useState("en");
     const { data, isLoading } = useYachtByIdQuery(id as string);
     const y: YachtListItem | null = data?.yachts ?? null;
-    const tr: YachtTranslation | undefined = y?.translations?.find((t: YachtTranslation) => t.locale === "en") ?? y?.translations?.[0];
+    const availableLocales = y?.translations?.map((t: YachtTranslation) => t.locale) ?? [];
+    const tr: YachtTranslation | undefined = y?.translations?.find((t: YachtTranslation) => t.locale === locale) ?? y?.translations?.[0];
     const title = tr?.title ?? y?.name ?? y?.boatType ?? "—";
 
     useEffect(() => {
@@ -133,6 +135,24 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                     <span className="font-bold text-[20px] lg:text-[24px]" style={{ color: colors.textPrimary }}>
                         Yachts Name - {title}
                     </span>
+                    {availableLocales.length > 1 && (
+                        <div className="flex gap-1 ml-2">
+                            {availableLocales.map(l => (
+                                <button
+                                    key={l}
+                                    onClick={() => setLocale(l)}
+                                    className="px-2 py-0.5 rounded text-xs font-semibold uppercase transition-opacity hover:opacity-80"
+                                    style={{
+                                        backgroundColor: locale === l ? colors.accent : colors.hoverBg,
+                                        color: locale === l ? "#000" : colors.textSecondary,
+                                        border: `1px solid ${colors.cardBorder}`,
+                                    }}
+                                >
+                                    {l}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 <button
                     onClick={() => router.push("/yachts/addnewyachts")}

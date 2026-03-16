@@ -117,76 +117,85 @@ export interface YachtDetail {
 
 export interface YachtGalleryImage {
   id: string;
-  yacht_id: string;
-  image_url: string;
-  sort_order: number;
+  yachtId: string;
+  imageUrl: string;
+  isCover: boolean;
+  sortOrder: number;
+  caption?: string | null;
 }
 
 export interface YachtTag {
   id: string;
-  yacht_id: string;
+  yachtId: string;
   tag: string;
-  locale: string;
+  locale?: string | null;
 }
 
 export interface YachtTranslation {
   id: string;
-  yacht_id: string;
+  yachtId: string;
   locale: string;
-  title: string;
-  slug: string;
-  day_charter?: string | null;
-  overnight_charter?: string | null;
-  about_this_boat?: string | null;
+  title?: string | null;
+  slug?: string | null;
+  dayCharter?: string | null;
+  overnightCharter?: string | null;
+  aboutThisBoat?: string | null;
   specifications?: string | null;
-  boat_layout?: string | null;
+  boatLayout?: string | null;
 }
 
 export interface YachtListItem {
   id: string;
+  name: string;
   type: string;
-  boat_type: string;
-  price_category: string;
-  capacity: string;
-  guests_range?: string | null;
-  website?: string | null;
-  length_range: string;
-  length?: number | string | null;
-  cabins?: number | null;
-  bathrooms?: number | null;
-  passenger_day_trip?: number | null;
-  passenger_overnight?: number | null;
-  guests?: number | null;
-  day_trip_price?: number | string | null;
-  overnight_price?: number | string | null;
-  daytrip_price_euro?: number | string | null;
-  video_link?: string | null;
+  boatType?: string | null;
+  charterType?: string | null;
+  price?: string | null;
+  capacity?: string | null;
+  guestsRange?: string | null;
+  lengthRange?: string | null;
+  length?: string | null;
+  cabins?: string | null;
+  bathrooms?: string | null;
+  passengerDayTrip?: string | null;
+  passengerOvernight?: string | null;
+  guests?: string | null;
+  dayTripPrice?: string | null;
+  overnightPrice?: string | null;
+  daytripPriceEuro?: string | null;
+  videoLink?: string | null;
   badge?: string | null;
   design?: string | null;
   built?: string | null;
-  cruising_speed?: string | null;
-  length_overall?: number | string | null;
-  fuel_capacity?: string | null;
-  water_capacity?: string | null;
+  cruisingSpeed?: string | null;
+  lengthOverall?: string | null;
+  fuelCapacity?: string | null;
+  waterCapacity?: string | null;
   code?: string | null;
-  display_order?: number | null;
-  primary_image?: string | null;
+  displayOrder?: number | null;
+  primaryImage?: string | null;
+  publicationStatus?: string | null;
   status: string;
   isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-  yacht_gallery_images?: YachtGalleryImage[];
-  yacht_tags?: YachtTag[];
-  yacht_translations?: YachtTranslation[];
-  name?: string;
-  lengthM?: number | string | null;
+  lengthM?: number | null;
+  beamM?: number | null;
   capacityGuests?: number;
+  capacityCrew?: number | null;
   yearBuilt?: number | null;
+  engineType?: string | null;
+  engineHp?: number | null;
+  cruiseSpeedKnots?: number | null;
+  fuelCapacityL?: number | null;
+  homePort?: string | null;
   regionId?: string;
   companyId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  images?: YachtGalleryImage[];
+  tags?: YachtTag[];
+  translations?: YachtTranslation[];
   region?: YachtListItemRegion;
   company?: YachtListItemCompany;
-  images?: YachtListItemImage[];
 }
 
 export interface YachtsListResponse {
@@ -380,7 +389,7 @@ async function getYachtsApi(
 
 async function getYachtByIdApi(yachtId: string): Promise<{ yachts: YachtListItem }> {
   const { data } = await apiClient.get(
-    `${config.api.yachts.byId(yachtId)}?includeTranslations=true&includeTags=true`
+    `${config.api.yachts.byId(yachtId)}?includeTranslations=true&includeTags=true&includeImages=true`
   );
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");

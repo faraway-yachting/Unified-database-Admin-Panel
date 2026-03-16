@@ -20,19 +20,19 @@ import LoadingSpinner from "@/components/common/LoadingSpinner";
 const PAGE_SIZE = 12;
 
 function apiYachtToCardYacht(api: YachtListItem): Yacht {
-  const tr = api.yacht_translations?.find(t => t.locale === 'en') ?? api.yacht_translations?.[0];
-  const title = tr?.title ?? api.name ?? api.boat_type ?? api.type ?? 'Yacht';
+  const tr = api.translations?.find(t => t.locale === 'en') ?? api.translations?.[0];
+  const title = tr?.title ?? api.name ?? api.boatType ?? api.type ?? 'Yacht';
 
-  const primaryImg = api.primary_image ?? null;
-  const galleryFirst = api.yacht_gallery_images?.[0]?.image_url ?? null;
+  const primaryImg = api.primaryImage ?? null;
+  const galleryFirst = api.images?.[0]?.imageUrl ?? null;
   const legacyCover = api.images?.find((i) => i.isCover)?.imageUrl ?? api.images?.[0]?.imageUrl ?? null;
   const image = primaryImg ?? galleryFirst ?? legacyCover ?? DEFAULT_YACHT_IMAGE;
 
-  const galleryUrls = api.yacht_gallery_images?.map(g => g.image_url).filter(Boolean);
+  const galleryUrls = api.images?.map(g => g.imageUrl).filter(Boolean);
   const legacyUrls = api.images?.map(i => i.imageUrl).filter(Boolean);
   const images = (galleryUrls?.length ? galleryUrls : legacyUrls) ?? undefined;
 
-  const rawLength = api.length ?? api.length_overall ?? null;
+  const rawLength = api.length ?? api.lengthOverall ?? null;
   const lengthVal = rawLength != null ? parseFloat(String(rawLength)) : 0;
 
   const capacityVal = api.guests ?? (api.capacity ? parseInt(String(api.capacity), 10) : 0) ?? 0;

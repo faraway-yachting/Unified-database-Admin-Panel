@@ -31,8 +31,8 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
 
   const images = useMemo(() => {
     if (!yacht) return [];
-    const galleryImages = (rawDetail?.yacht_gallery_images as Array<{ image_url: string }> | undefined)
-      ?.map(img => img.image_url).filter(Boolean) ?? [];
+    const galleryImages = (rawDetail?.images as Array<{ imageUrl: string }> | undefined)
+      ?.map(img => img.imageUrl).filter(Boolean) ?? [];
     const legacyImages = (detail?.images as Array<{ imageUrl: string }> | undefined)?.map((img) => img.imageUrl).filter(Boolean) ?? [];
     const detailImages = galleryImages.length > 0 ? galleryImages : legacyImages;
     const list =
@@ -43,7 +43,7 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
           : [yacht.image];
     return list.filter(Boolean);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rawDetail?.yacht_gallery_images, detail?.images, yacht]);
+  }, [rawDetail?.images, detail?.images, yacht]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -73,13 +73,13 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
   const lengthFt = lengthM ? Math.round(lengthM * 3.28084) : 0;
   const displayLengthFt = lengthFt || yacht.length || 0;
 
-  const rawLengthOverall = rawDetail?.length_overall as string | number | null | undefined;
+  const rawLengthOverall = (rawDetail?.lengthOverall ?? rawDetail?.lengthM) as string | number | null | undefined;
   const lengthOverall = rawLengthOverall != null ? parseFloat(String(rawLengthOverall)) : null;
 
-  const cruisingSpeedRaw = (rawDetail?.cruising_speed ?? detail?.cruiseSpeedKnots) as string | number | null | undefined;
+  const cruisingSpeedRaw = (rawDetail?.cruisingSpeed ?? detail?.cruiseSpeedKnots) as string | number | null | undefined;
   const cruiseSpeed = cruisingSpeedRaw != null ? parseFloat(String(cruisingSpeedRaw)) : null;
 
-  const fuelCapacityRaw = (rawDetail?.fuel_capacity ?? detail?.fuelCapacityL) as string | number | null | undefined;
+  const fuelCapacityRaw = (rawDetail?.fuelCapacity ?? detail?.fuelCapacityL) as string | number | null | undefined;
   const fuelCapacity = fuelCapacityRaw != null ? String(fuelCapacityRaw) : null;
 
   const builtRaw = (rawDetail?.built ?? (detail?.yearBuilt != null ? String(detail.yearBuilt) : null)) as string | number | null | undefined;
@@ -87,12 +87,12 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
   const specs = [
     { label: "Length Overall", value: (lengthOverall ?? displayLengthFt) ? `${lengthOverall ?? displayLengthFt} m` : "—" },
     { label: "Guests", value: rawDetail?.guests != null ? String(rawDetail.guests) : (detail?.capacityGuests ? String(detail.capacityGuests) : "—") },
-    { label: "Cruising Speed", value: cruiseSpeed != null && Number.isFinite(cruiseSpeed) ? `${cruiseSpeed}` : (rawDetail?.cruising_speed ? String(rawDetail.cruising_speed) : "—") },
+    { label: "Cruising Speed", value: cruiseSpeed != null && Number.isFinite(cruiseSpeed) ? `${cruiseSpeed}` : (rawDetail?.cruisingSpeed ? String(rawDetail.cruisingSpeed) : "—") },
     { label: "Fuel Capacity", value: fuelCapacity || "—" },
     { label: "Cabins", value: rawDetail?.cabins != null ? String(rawDetail.cabins) : "—" },
     { label: "Bathrooms", value: rawDetail?.bathrooms != null ? String(rawDetail.bathrooms) : "—" },
     { label: "Built", value: builtRaw ? String(builtRaw) : "—" },
-    { label: "Water Capacity", value: rawDetail?.water_capacity ? String(rawDetail.water_capacity) : "—" },
+    { label: "Water Capacity", value: rawDetail?.waterCapacity ? String(rawDetail.waterCapacity) : "—" },
   ];
 
   const amenities = (detail?.amenities ?? []).filter((amenity) => amenity.isAvailable);

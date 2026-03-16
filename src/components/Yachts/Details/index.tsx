@@ -37,19 +37,19 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
     const [richHtml, setRichHtml] = useState<Record<string, string>>({});
     const { data, isLoading } = useYachtByIdQuery(id as string);
     const y: YachtListItem | null = data?.yachts ?? null;
-    const tr: YachtTranslation | undefined = y?.yacht_translations?.find((t: YachtTranslation) => t.locale === "en") ?? y?.yacht_translations?.[0];
-    const title = tr?.title ?? y?.name ?? y?.boat_type ?? "—";
+    const tr: YachtTranslation | undefined = y?.translations?.find((t: YachtTranslation) => t.locale === "en") ?? y?.translations?.[0];
+    const title = tr?.title ?? y?.name ?? y?.boatType ?? "—";
 
     useEffect(() => {
         if (!tr) return;
         import("dompurify").then(({ default: DOMPurify }) => {
             const map: Record<string, string> = {};
             [
-                { label: "Day Charter", html: tr.day_charter },
-                { label: "Overnight Charter", html: tr.overnight_charter },
-                { label: "About this Boat", html: tr.about_this_boat },
+                { label: "Day Charter", html: tr.dayCharter },
+                { label: "Overnight Charter", html: tr.overnightCharter },
+                { label: "About this Boat", html: tr.aboutThisBoat },
                 { label: "Specifications", html: tr.specifications },
-                { label: "Boat Layout", html: tr.boat_layout },
+                { label: "Boat Layout", html: tr.boatLayout },
             ].forEach(s => {
                 if (s.html?.trim()) map[s.label] = DOMPurify.sanitize(s.html, PURIFY_CONFIG);
             });
@@ -79,45 +79,45 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
         { label: "Title", value: title },
         { label: "Yacht Type", value: y?.type },
         { label: "Capacity", value: y?.capacity },
-        { label: "Cabins", value: y?.cabins != null ? String(y.cabins) : undefined },
-        { label: "Passenger Day Trip", value: y?.passenger_day_trip != null ? String(y.passenger_day_trip) : undefined },
-        { label: "Guests", value: y?.guests != null ? String(y.guests) : undefined },
-        { label: "Day Trip Price", value: y?.day_trip_price != null ? String(y.day_trip_price) : undefined },
-        { label: "Day Trip Price Euro", value: y?.daytrip_price_euro != null ? `${y.daytrip_price_euro}€` : undefined },
+        { label: "Cabins", value: y?.cabins ?? undefined },
+        { label: "Passenger Day Trip", value: y?.passengerDayTrip ?? undefined },
+        { label: "Guests", value: y?.guests ?? undefined },
+        { label: "Day Trip Price", value: y?.dayTripPrice ?? undefined },
+        { label: "Day Trip Price Euro", value: y?.daytripPriceEuro ? `${y.daytripPriceEuro}€` : undefined },
     ];
 
     const rightFields = [
-        { label: "Boat Type", value: y?.boat_type },
-        { label: "Category", value: y?.price_category },
-        { label: "Length", value: y?.length != null ? `${y.length}ft` : undefined },
-        { label: "Bathrooms", value: y?.bathrooms != null ? String(y.bathrooms) : undefined },
-        { label: "Passenger Overnight", value: y?.passenger_overnight != null ? String(y.passenger_overnight) : undefined },
-        { label: "Guests Range", value: y?.guests_range },
-        { label: "Overnight Price", value: y?.overnight_price != null ? String(y.overnight_price) : undefined },
-        { label: "Length Range", value: y?.length_range, optional: true },
-        { label: "Cruising Speed", value: y?.cruising_speed },
-        { label: "Fuel Capacity", value: y?.fuel_capacity },
-        { label: "Water Capacity", value: y?.water_capacity },
-        { label: "Design", value: y?.design },
-        { label: "Built", value: y?.built },
-        { label: "Badge", value: y?.badge },
-        { label: "Code", value: y?.code },
+        { label: "Boat Type", value: y?.boatType ?? undefined },
+        { label: "Charter Type", value: y?.charterType ?? undefined },
+        { label: "Length", value: y?.length ? `${y.length}ft` : undefined },
+        { label: "Bathrooms", value: y?.bathrooms ?? undefined },
+        { label: "Passenger Overnight", value: y?.passengerOvernight ?? undefined },
+        { label: "Guests Range", value: y?.guestsRange ?? undefined },
+        { label: "Overnight Price", value: y?.overnightPrice ?? undefined },
+        { label: "Length Range", value: y?.lengthRange ?? undefined, optional: true },
+        { label: "Cruising Speed", value: y?.cruisingSpeed ?? undefined },
+        { label: "Fuel Capacity", value: y?.fuelCapacity ?? undefined },
+        { label: "Water Capacity", value: y?.waterCapacity ?? undefined },
+        { label: "Design", value: y?.design ?? undefined },
+        { label: "Built", value: y?.built ?? undefined },
+        { label: "Badge", value: y?.badge ?? undefined },
+        { label: "Code", value: y?.code ?? undefined },
         { label: "Status", value: y?.status },
     ];
 
-    const galleryImages: YachtGalleryImage[] = y?.yacht_gallery_images ?? [];
-    const coverUrl = y?.primary_image ?? galleryImages[0]?.image_url ?? null;
-    const rawTags: YachtTag[] = y?.yacht_tags ?? [];
+    const galleryImages: YachtGalleryImage[] = y?.images ?? [];
+    const coverUrl = y?.primaryImage ?? galleryImages.find(i => i.isCover)?.imageUrl ?? galleryImages[0]?.imageUrl ?? null;
+    const rawTags: YachtTag[] = y?.tags ?? [];
     const enTags = rawTags.filter(t => t.locale === "en");
     const tagSource = enTags.length > 0 ? enTags : rawTags;
     const tags: string[] = [...new Set(tagSource.map(t => t.tag))];
 
     const richSections = [
-        { label: "Day Charter", html: tr?.day_charter },
-        { label: "Overnight Charter", html: tr?.overnight_charter },
-        { label: "About this Boat", html: tr?.about_this_boat },
+        { label: "Day Charter", html: tr?.dayCharter },
+        { label: "Overnight Charter", html: tr?.overnightCharter },
+        { label: "About this Boat", html: tr?.aboutThisBoat },
         { label: "Specifications", html: tr?.specifications },
-        { label: "Boat Layout", html: tr?.boat_layout },
+        { label: "Boat Layout", html: tr?.boatLayout },
     ];
 
     const divider = { borderColor: colors.cardBorder };
@@ -241,7 +241,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                                     {galleryImages.map((img: YachtGalleryImage, idx: number) => (
                                         <Image
                                             key={img.id ?? idx}
-                                            src={img.image_url}
+                                            src={img.imageUrl}
                                             alt={`Gallery ${idx + 1}`}
                                             width={100}
                                             height={70}
@@ -255,7 +255,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                                     className="rounded-full px-[14px] py-[6px] flex items-center gap-2 text-sm cursor-pointer font-medium transition-opacity hover:opacity-80"
                                     style={{ backgroundColor: colors.accent, color: "#000" }}
                                     onClick={() => {
-                                        const html = `<html><head><style>body{font-family:sans-serif;padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#f9f9f9}img{width:100%;height:300px;object-fit:cover;border-radius:8px}</style></head><body>${galleryImages.map((img: YachtGalleryImage) => `<img src="${img.image_url}" />`).join("")}</body></html>`;
+                                        const html = `<html><head><style>body{font-family:sans-serif;padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#f9f9f9}img{width:100%;height:300px;object-fit:cover;border-radius:8px}</style></head><body>${galleryImages.map((img: YachtGalleryImage) => `<img src="${img.imageUrl}" />`).join("")}</body></html>`;
                                         const win = window.open();
                                         if (win) { win.document.write(html); win.document.close(); }
                                     }}
@@ -266,14 +266,14 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                         </div>
                     )}
 
-                    {y?.video_link?.trim() && (
+                    {y?.videoLink?.trim() && (
                         <div className="rounded-2xl px-3 py-3" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}>
                             <p className="font-bold text-[16px] mb-2 pb-2 border-b" style={{ color: colors.textPrimary, borderColor: colors.cardBorder }}>
                                 Video
                             </p>
                             <div className="rounded-lg overflow-hidden" style={{ border: `1px solid ${colors.cardBorder}` }}>
                                 <iframe
-                                    src={getEmbedUrl(y.video_link)}
+                                    src={getEmbedUrl(y.videoLink)}
                                     width="100%"
                                     height="160"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"

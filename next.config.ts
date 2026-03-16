@@ -19,6 +19,15 @@ const imageDomains = [
   ...(s3Hostname ? [s3Hostname] : []),
 ];
 
+const backendApiUrlRaw =
+  process.env.BACKEND_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:3500";
+const backendApiUrl = backendApiUrlRaw.replace(/\/$/, "");
+const apiDestination = backendApiUrl.endsWith("/api")
+  ? `${backendApiUrl}/:path*`
+  : `${backendApiUrl}/api/:path*`;
+
 const nextConfig: NextConfig = {
   images: {
     domains: imageDomains,
@@ -35,7 +44,14 @@ const nextConfig: NextConfig = {
     unoptimized: false,
     formats: ["image/webp", "image/avif"],
   },
-  // Removed experimental.optimizeCss as it causes build issues
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: apiDestination,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

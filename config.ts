@@ -1,10 +1,10 @@
-const BASE_API_URL =
-  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL?.trim()) ||
-  "http://localhost:5000";
+const rawApiUrl =
+  (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_URL?.trim()) || "";
+const BASE_API_URL = rawApiUrl.replace(/\/$/, "");
 
 function url(path: string): string {
   const p = path.startsWith('/') ? path : `/${path}`;
-  return `${BASE_API_URL.replace(/\/$/, '')}${p}`;
+  return BASE_API_URL ? `${BASE_API_URL}${p}` : p;
 }
 
 export const config = {

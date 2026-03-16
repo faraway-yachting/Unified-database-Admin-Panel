@@ -115,17 +115,75 @@ export interface YachtDetail {
   availabilityBlocks?: YachtDetailAvailabilityBlock[];
 }
 
+export interface YachtGalleryImage {
+  id: string;
+  yacht_id: string;
+  image_url: string;
+  sort_order: number;
+}
+
+export interface YachtTag {
+  id: string;
+  yacht_id: string;
+  tag: string;
+  locale: string;
+}
+
+export interface YachtTranslation {
+  id: string;
+  yacht_id: string;
+  locale: string;
+  title: string;
+  slug: string;
+  day_charter?: string | null;
+  overnight_charter?: string | null;
+  about_this_boat?: string | null;
+  specifications?: string | null;
+  boat_layout?: string | null;
+}
+
 export interface YachtListItem {
   id: string;
-  name: string;
   type: string;
-  lengthM: number | string | null;
-  capacityGuests: number;
-  yearBuilt: number | null;
+  boat_type: string;
+  price_category: string;
+  capacity: string;
+  guests_range?: string | null;
+  website?: string | null;
+  length_range: string;
+  length?: number | string | null;
+  cabins?: number | null;
+  bathrooms?: number | null;
+  passenger_day_trip?: number | null;
+  passenger_overnight?: number | null;
+  guests?: number | null;
+  day_trip_price?: number | string | null;
+  overnight_price?: number | string | null;
+  daytrip_price_euro?: number | string | null;
+  video_link?: string | null;
+  badge?: string | null;
+  design?: string | null;
+  built?: string | null;
+  cruising_speed?: string | null;
+  length_overall?: number | string | null;
+  fuel_capacity?: string | null;
+  water_capacity?: string | null;
+  code?: string | null;
+  display_order?: number | null;
+  primary_image?: string | null;
   status: string;
   isActive: boolean;
-  regionId: string;
-  companyId: string;
+  createdAt?: string;
+  updatedAt?: string;
+  yacht_gallery_images?: YachtGalleryImage[];
+  yacht_tags?: YachtTag[];
+  yacht_translations?: YachtTranslation[];
+  name?: string;
+  lengthM?: number | string | null;
+  capacityGuests?: number;
+  yearBuilt?: number | null;
+  regionId?: string;
+  companyId?: string;
   region?: YachtListItemRegion;
   company?: YachtListItemCompany;
   images?: YachtListItemImage[];
@@ -149,6 +207,7 @@ export interface YachtsListFilters {
   includeCompany?: boolean;
   includeRegion?: boolean;
   includeImages?: boolean;
+  includeTranslations?: boolean;
 }
 
 export interface AddYachtsPayload {
@@ -294,6 +353,7 @@ function buildListParams(
   if (filters?.includeCompany === true) params.set("includeCompany", "true");
   if (filters?.includeRegion === true) params.set("includeRegion", "true");
   if (filters?.includeImages === true) params.set("includeImages", "true");
+  if (filters?.includeTranslations === true) params.set("includeTranslations", "true");
   return params.toString();
 }
 
@@ -319,7 +379,9 @@ async function getYachtsApi(
 }
 
 async function getYachtByIdApi(yachtId: string): Promise<{ yachts: YachtListItem }> {
-  const { data } = await apiClient.get(config.api.yachts.byId(yachtId));
+  const { data } = await apiClient.get(
+    `${config.api.yachts.byId(yachtId)}?includeTranslations=true&includeTags=true`
+  );
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
@@ -363,15 +425,55 @@ async function updateYachtApi({
   payload: AddYachtsPayload;
   yachtsId: string;
 }) {
-  const { data } = await apiClient.put(
+  const form = new FormData();
+  const snakeMap: Record<string, string> = {
+    boatType: "boat_type",
+    price: "price_category",
+    lengthRange: "length_range",
+    passengerDayTrip: "passenger_day_trip",
+    passengerOvernight: "passenger_overnight",
+    guestsRange: "guests_range",
+    dayTripPrice: "day_trip_price",
+    overnightPrice: "overnight_price",
+    daytripPriceEuro: "daytrip_price_euro",
+    cruisingSpeed: "cruising_speed",
+    lengthOverall: "length_overall",
+    fuelCapacity: "fuel_capacity",
+    waterCapacity: "water_capacity",
+    videoLink: "video_link",
+    primaryImage: "primary_image",
+    dayCharter: "day_charter",
+    overnightCharter: "overnight_charter",
+    aboutThisBoat: "about_this_boat",
+    boatLayout: "boat_layout",
+  };
+
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === undefined || value === null) continue;
+    const snakeKey = snakeMap[key] ?? key;
+    if (key === "primaryImage" && value instanceof File) {
+      form.append(snakeKey, value);
+    } else if (key === "galleryImages" && Array.isArray(value)) {
+      for (const img of value) {
+        if (img instanceof File) form.append("gallery_images", img);
+        else if (typeof img === "string") form.append("gallery_image_urls", img);
+      }
+    } else if (key === "tags" && Array.isArray(value)) {
+      for (const tag of value) form.append("tags[]", tag);
+    } else if (typeof value !== "object") {
+      form.append(snakeKey, String(value));
+    }
+  }
+
+  const { data } = await apiClient.patch(
     config.api.yachts.update(yachtsId),
-    payload,
+    form,
     { headers: { "Content-Type": "multipart/form-data" } }
   );
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
-  return data.data;
+  return data;
 }
 
 async function deleteYachtApi(id: string): Promise<{ success: boolean; id: string }> {

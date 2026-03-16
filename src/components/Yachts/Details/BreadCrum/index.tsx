@@ -17,7 +17,7 @@ const BreadCrum: React.FC<BreadCrumProps> = ({ yacht }) => {
             <div className="flex items-center gap-3">
                 <FaSailboat />
                 <div className="text-[#002733] font-bold text-[20px] lg:text-[22px] xl:text-[24px] 2xl:text-[28px]">
-                    Yachts Name - {yacht?.name}
+                    Yachts Name - {yacht?.yacht_translations?.find(t => t.locale === 'en')?.title ?? yacht?.yacht_translations?.[0]?.title ?? yacht?.name ?? yacht?.boat_type ?? "—"}
                 </div>
             </div>
             <button onClick={() => router.push('/yachts/addnewyachts')} className="px-[16px] py-[7px] rounded-full bg-[#012A50] hover:bg-[#5F5C63] text-center font-medium text-white cursor-pointer hover:text-white">

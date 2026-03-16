@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Ship, CheckCircle, Wrench, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 import { useFleetTopBarActions, defaultFleetFilters } from "@/context/FleetTopBarActionsContext";
 import {
   useYachtsQuery,
   DEFAULT_YACHT_IMAGE,
-  parseLength,
   yachtTypeToDisplay,
   yachtStatusToDisplay,
   type YachtListItem,
@@ -15,36 +15,38 @@ import {
 } from "@/lib/api/yachts";
 import { FleetKPICard } from "./FleetKPICard";
 import { YachtCard, type Yacht } from "./YachtCard";
-import { YachtDetailDrawer } from "./YachtDetailDrawer";
-import { YachtEditDrawer } from "./YachtEditDrawer";
 import LoadingSpinner from "@/components/common/LoadingSpinner";
 
 const PAGE_SIZE = 12;
 
 function apiYachtToCardYacht(api: YachtListItem): Yacht {
-  const coverImage = api.images?.find((i) => i.isCover)?.imageUrl;
-  const image = coverImage ?? api.images?.[0]?.imageUrl ?? DEFAULT_YACHT_IMAGE;
-  const images = api.images?.length
-    ? [
-        ...(coverImage ? [coverImage] : []),
-        ...api.images
-          .map((i) => i.imageUrl)
-          .filter((url) => !!url && url !== coverImage),
-      ]
-    : undefined;
-  const lengthM = parseLength(api.lengthM);
-  const lengthFt = Math.round(lengthM * 3.28084);
-  const regionName = api.region?.name ?? "—";
+  const tr = api.yacht_translations?.find(t => t.locale === 'en') ?? api.yacht_translations?.[0];
+  const title = tr?.title ?? api.name ?? api.boat_type ?? api.type ?? 'Yacht';
+
+  const primaryImg = api.primary_image ?? null;
+  const galleryFirst = api.yacht_gallery_images?.[0]?.image_url ?? null;
+  const legacyCover = api.images?.find((i) => i.isCover)?.imageUrl ?? api.images?.[0]?.imageUrl ?? null;
+  const image = primaryImg ?? galleryFirst ?? legacyCover ?? DEFAULT_YACHT_IMAGE;
+
+  const galleryUrls = api.yacht_gallery_images?.map(g => g.image_url).filter(Boolean);
+  const legacyUrls = api.images?.map(i => i.imageUrl).filter(Boolean);
+  const images = (galleryUrls?.length ? galleryUrls : legacyUrls) ?? undefined;
+
+  const rawLength = api.length ?? api.length_overall ?? null;
+  const lengthVal = rawLength != null ? parseFloat(String(rawLength)) : 0;
+
+  const capacityVal = api.guests ?? (api.capacity ? parseInt(String(api.capacity), 10) : 0) ?? 0;
+
   return {
     id: api.id,
-    name: api.name,
+    name: title,
     type: yachtTypeToDisplay(api.type),
     image,
     images,
-    length: lengthFt || 0,
-    capacity: api.capacityGuests ?? 0,
-    year: api.yearBuilt ?? 0,
-    region: regionName,
+    length: lengthVal || 0,
+    capacity: capacityVal,
+    year: 0,
+    region: "—",
     status: yachtStatusToDisplay(api.status),
   };
 }
@@ -72,16 +74,16 @@ function buildListFilters(
     isActive: fleetFilters.isActive || undefined,
     includeCompany: fleetFilters.includeCompany || undefined,
     includeRegion: fleetFilters.includeRegion || undefined,
-    includeImages: fleetFilters.includeImages || undefined,
+    includeImages: true,
+    includeTranslations: true,
   };
 }
 
 export default function FleetManagement() {
+  const router = useRouter();
   const { colors } = useTheme();
   const { activeFilter, setActiveFilter, fleetFilters } = useFleetTopBarActions();
   const [page, setPage] = useState(1);
-  const [selectedYacht, setSelectedYacht] = useState<Yacht | null>(null);
-  const [selectedEditYacht, setSelectedEditYacht] = useState<Yacht | null>(null);
 
   const filters = useMemo(
     () => buildListFilters(activeFilter, fleetFilters),
@@ -208,8 +210,8 @@ export default function FleetManagement() {
                 <YachtCard
                   key={yacht.id}
                   yacht={yacht}
-                  onClick={() => setSelectedYacht(yacht)}
-                  onEdit={() => setSelectedEditYacht(yacht)}
+                  onClick={() => router.push(`/yachts/${yacht.id}`)}
+                  onEdit={() => router.push(`/yachts/${yacht.id}?edit=true`)}
                 />
               ))}
             </div>
@@ -267,18 +269,6 @@ export default function FleetManagement() {
           </>
         )}
 
-        {selectedYacht && (
-          <YachtDetailDrawer
-            yacht={selectedYacht}
-            onClose={() => setSelectedYacht(null)}
-          />
-        )}
-        {selectedEditYacht && (
-          <YachtEditDrawer
-            yacht={selectedEditYacht}
-            onClose={() => setSelectedEditYacht(null)}
-          />
-        )}
       </div>
     </div>
   );

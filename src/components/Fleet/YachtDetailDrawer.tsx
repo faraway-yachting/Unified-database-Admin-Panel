@@ -27,9 +27,14 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
   const { data, isLoading, isError, error } = useYachtDetailQuery(yacht?.id ?? null);
   const detail = data?.yacht;
 
+  const rawDetail = detail as Record<string, unknown> | undefined;
+
   const images = useMemo(() => {
     if (!yacht) return [];
-    const detailImages = detail?.images?.map((img) => img.imageUrl).filter(Boolean) ?? [];
+    const galleryImages = (rawDetail?.yacht_gallery_images as Array<{ image_url: string }> | undefined)
+      ?.map(img => img.image_url).filter(Boolean) ?? [];
+    const legacyImages = (detail?.images as Array<{ imageUrl: string }> | undefined)?.map((img) => img.imageUrl).filter(Boolean) ?? [];
+    const detailImages = galleryImages.length > 0 ? galleryImages : legacyImages;
     const list =
       detailImages.length > 0
         ? detailImages
@@ -37,7 +42,8 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
           ? yacht.images
           : [yacht.image];
     return list.filter(Boolean);
-  }, [detail?.images, yacht]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawDetail?.yacht_gallery_images, detail?.images, yacht]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -62,22 +68,31 @@ export function YachtDetailDrawer({ yacht, onClose }: YachtDetailDrawerProps) {
   const hasMultipleImages = images.length > 1;
   const activeImage = images[activeIndex] || yacht.image;
 
-  const lengthM = parseLength(detail?.lengthM ?? null);
+  const rawLength = (rawDetail?.length ?? detail?.lengthM) as string | number | null | undefined;
+  const lengthM = parseLength(rawLength ?? null);
   const lengthFt = lengthM ? Math.round(lengthM * 3.28084) : 0;
   const displayLengthFt = lengthFt || yacht.length || 0;
-  const beamM = detail?.beamM != null ? parseFloat(String(detail.beamM)) : null;
-  const cruiseSpeed = detail?.cruiseSpeedKnots != null ? parseFloat(String(detail.cruiseSpeedKnots)) : null;
-  const fuelCapacity = detail?.fuelCapacityL ?? null;
+
+  const rawLengthOverall = rawDetail?.length_overall as string | number | null | undefined;
+  const lengthOverall = rawLengthOverall != null ? parseFloat(String(rawLengthOverall)) : null;
+
+  const cruisingSpeedRaw = (rawDetail?.cruising_speed ?? detail?.cruiseSpeedKnots) as string | number | null | undefined;
+  const cruiseSpeed = cruisingSpeedRaw != null ? parseFloat(String(cruisingSpeedRaw)) : null;
+
+  const fuelCapacityRaw = (rawDetail?.fuel_capacity ?? detail?.fuelCapacityL) as string | number | null | undefined;
+  const fuelCapacity = fuelCapacityRaw != null ? String(fuelCapacityRaw) : null;
+
+  const builtRaw = (rawDetail?.built ?? (detail?.yearBuilt != null ? String(detail.yearBuilt) : null)) as string | number | null | undefined;
 
   const specs = [
-    { label: "Length Overall", value: displayLengthFt ? `${displayLengthFt} ft` : "—" },
-    { label: "Beam", value: beamM != null && Number.isFinite(beamM) ? `${beamM} m` : "—" },
-    { label: "Cruising Speed", value: cruiseSpeed != null && Number.isFinite(cruiseSpeed) ? `${cruiseSpeed} knots` : "—" },
-    { label: "Fuel Capacity", value: fuelCapacity ? `${fuelCapacity} L` : "—" },
-    { label: "Engine", value: detail?.engineType || "—" },
-    { label: "Engine HP", value: detail?.engineHp ? `${detail.engineHp} hp` : "—" },
-    { label: "Year Built", value: detail?.yearBuilt ? String(detail.yearBuilt) : "—" },
-    { label: "Home Port", value: detail?.homePort || "—" },
+    { label: "Length Overall", value: (lengthOverall ?? displayLengthFt) ? `${lengthOverall ?? displayLengthFt} m` : "—" },
+    { label: "Guests", value: rawDetail?.guests != null ? String(rawDetail.guests) : (detail?.capacityGuests ? String(detail.capacityGuests) : "—") },
+    { label: "Cruising Speed", value: cruiseSpeed != null && Number.isFinite(cruiseSpeed) ? `${cruiseSpeed}` : (rawDetail?.cruising_speed ? String(rawDetail.cruising_speed) : "—") },
+    { label: "Fuel Capacity", value: fuelCapacity || "—" },
+    { label: "Cabins", value: rawDetail?.cabins != null ? String(rawDetail.cabins) : "—" },
+    { label: "Bathrooms", value: rawDetail?.bathrooms != null ? String(rawDetail.bathrooms) : "—" },
+    { label: "Built", value: builtRaw ? String(builtRaw) : "—" },
+    { label: "Water Capacity", value: rawDetail?.water_capacity ? String(rawDetail.water_capacity) : "—" },
   ];
 
   const amenities = (detail?.amenities ?? []).filter((amenity) => amenity.isAvailable);

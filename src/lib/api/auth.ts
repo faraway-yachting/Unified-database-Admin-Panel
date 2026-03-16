@@ -42,11 +42,21 @@ export interface ResetPasswordData {
 }
 
 async function signInApi(credentials: SignInCredentials) {
-  const { data } = await apiClient.post(config.api.auth.login, credentials);
+  const payload = {
+    email: credentials.email,
+    password: credentials.password,
+    username: credentials.email,
+    identifier: credentials.email,
+    login: credentials.email,
+  };
+  const { data } = await apiClient.post(config.api.auth.login, payload);
   if (data?.error) {
-    throw new Error(data?.error?.message || "Something went wrong");
+    throw new Error(
+      data?.error?.message ||
+      data?.message ||
+      (typeof data?.error === "string" ? data.error : "Something went wrong")
+    );
   }
-  // Tokens are stored in httpOnly cookies by the backend; no localStorage.
   return data;
 }
 
@@ -98,9 +108,11 @@ async function logoutApi(): Promise<void> {
 }
 
 function getErrorMessage(error: unknown): string {
-  const axiosError = error as AxiosError<{ message?: string }>;
+  const axiosError = error as AxiosError<{ message?: string; error?: string | { message?: string } }>;
+  const errorPayload = axiosError.response?.data?.error;
   return (
     axiosError.response?.data?.message ||
+    (typeof errorPayload === "string" ? errorPayload : errorPayload?.message) ||
     axiosError.message ||
     "Something went wrong"
   );

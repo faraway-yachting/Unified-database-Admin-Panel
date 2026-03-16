@@ -1,61 +1,293 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import Yachts from "./Details";
-import Yacht from "./DetailsOne"
+import { useRouter } from "next/navigation";
+import { MdEdit, MdKeyboardArrowLeft } from "react-icons/md";
+import { FaSailboat } from "react-icons/fa6";
+import { IoEyeOutline } from "react-icons/io5";
+import Image from "next/image";
+import { useTheme } from "@/context/ThemeContext";
+import { useYachtByIdQuery, type YachtListItem, type YachtTranslation, type YachtGalleryImage, type YachtTag } from "@/lib/api/yachts";
 import YachtsUpdate from "./Update";
-import BreadCrum from "./BreadCrum";
-import { useYachtByIdQuery } from "@/lib/api/yachts";
 
-interface VendorsProps {
+interface YachtsDetailProps {
     id: string | number;
+    defaultEdit?: boolean;
 }
 
-const YachtsDetail: React.FC<VendorsProps> = ({ id }) => {
 
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [showGeneralInfo, setShowGeneralInfo] = useState(false);
-    const { data, isLoading: loading } = useYachtByIdQuery(id as string);
-    const yacht = data?.yachts;
+function getEmbedUrl(url?: string | null) {
+    if (!url) return "";
+    const yt = url.match(/(?:https?:\/\/)?(?:www\.)?youtube\.com\/watch\?v=([\w-]+)/);
+    if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+    const ytb = url.match(/(?:https?:\/\/)?youtu\.be\/([\w-]+)/);
+    if (ytb) return `https://www.youtube.com/embed/${ytb[1]}`;
+    return url;
+}
+
+const PURIFY_CONFIG = {
+    ADD_ATTR: ["style", "class", "bgcolor", "color", "border", "cellpadding", "cellspacing", "width", "height", "align", "valign", "colspan", "rowspan", "target", "rel"],
+    ADD_TAGS: ["table", "thead", "tbody", "tfoot", "tr", "th", "td", "colgroup", "col"],
+};
+
+const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) => {
+    const router = useRouter();
+    const { colors } = useTheme();
+    const [editing, setEditing] = useState(defaultEdit);
+    const [richHtml, setRichHtml] = useState<Record<string, string>>({});
+    const { data, isLoading } = useYachtByIdQuery(id as string);
+    const y: YachtListItem | null = data?.yachts ?? null;
+    const tr: YachtTranslation | undefined = y?.yacht_translations?.find((t: YachtTranslation) => t.locale === "en") ?? y?.yacht_translations?.[0];
+    const title = tr?.title ?? y?.name ?? y?.boat_type ?? "—";
 
     useEffect(() => {
-        if (activeIndex === 0) {
-            setActiveIndex(0);
-        }
-    }, [activeIndex]);
+        if (!tr) return;
+        import("dompurify").then(({ default: DOMPurify }) => {
+            const map: Record<string, string> = {};
+            [
+                { label: "Day Charter", html: tr.day_charter },
+                { label: "Overnight Charter", html: tr.overnight_charter },
+                { label: "About this Boat", html: tr.about_this_boat },
+                { label: "Specifications", html: tr.specifications },
+                { label: "Boat Layout", html: tr.boat_layout },
+            ].forEach(s => {
+                if (s.html?.trim()) map[s.label] = DOMPurify.sanitize(s.html, PURIFY_CONFIG);
+            });
+            setRichHtml(map);
+        });
+    }, [tr]);
 
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-[calc(100vh-112px)]" style={{ backgroundColor: colors.background }}>
+                <div className="w-10 h-10 border-3 border-t-transparent rounded-full animate-spin" style={{ borderColor: colors.accent }} />
+            </div>
+        );
+    }
+
+    if (editing) {
+        return (
+            <div className="mt-4" style={{ backgroundColor: colors.background }}>
+                <div className="rounded-2xl px-5 py-5" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}>
+                    <YachtsUpdate goToPrevTab={() => setEditing(false)} id={id} />
+                </div>
+            </div>
+        );
+    }
+
+    const leftFields = [
+        { label: "Title", value: title },
+        { label: "Yacht Type", value: y?.type },
+        { label: "Capacity", value: y?.capacity },
+        { label: "Cabins", value: y?.cabins != null ? String(y.cabins) : undefined },
+        { label: "Passenger Day Trip", value: y?.passenger_day_trip != null ? String(y.passenger_day_trip) : undefined },
+        { label: "Guests", value: y?.guests != null ? String(y.guests) : undefined },
+        { label: "Day Trip Price", value: y?.day_trip_price != null ? String(y.day_trip_price) : undefined },
+        { label: "Day Trip Price Euro", value: y?.daytrip_price_euro != null ? `${y.daytrip_price_euro}€` : undefined },
+    ];
+
+    const rightFields = [
+        { label: "Boat Type", value: y?.boat_type },
+        { label: "Category", value: y?.price_category },
+        { label: "Length", value: y?.length != null ? `${y.length}ft` : undefined },
+        { label: "Bathrooms", value: y?.bathrooms != null ? String(y.bathrooms) : undefined },
+        { label: "Passenger Overnight", value: y?.passenger_overnight != null ? String(y.passenger_overnight) : undefined },
+        { label: "Guests Range", value: y?.guests_range },
+        { label: "Overnight Price", value: y?.overnight_price != null ? String(y.overnight_price) : undefined },
+        { label: "Length Range", value: y?.length_range, optional: true },
+        { label: "Cruising Speed", value: y?.cruising_speed },
+        { label: "Fuel Capacity", value: y?.fuel_capacity },
+        { label: "Water Capacity", value: y?.water_capacity },
+        { label: "Design", value: y?.design },
+        { label: "Built", value: y?.built },
+        { label: "Badge", value: y?.badge },
+        { label: "Code", value: y?.code },
+        { label: "Status", value: y?.status },
+    ];
+
+    const galleryImages: YachtGalleryImage[] = y?.yacht_gallery_images ?? [];
+    const coverUrl = y?.primary_image ?? galleryImages[0]?.image_url ?? null;
+    const rawTags: YachtTag[] = y?.yacht_tags ?? [];
+    const enTags = rawTags.filter(t => t.locale === "en");
+    const tagSource = enTags.length > 0 ? enTags : rawTags;
+    const tags: string[] = [...new Set(tagSource.map(t => t.tag))];
+
+    const richSections = [
+        { label: "Day Charter", html: tr?.day_charter },
+        { label: "Overnight Charter", html: tr?.overnight_charter },
+        { label: "About this Boat", html: tr?.about_this_boat },
+        { label: "Specifications", html: tr?.specifications },
+        { label: "Boat Layout", html: tr?.boat_layout },
+    ];
+
+    const divider = { borderColor: colors.cardBorder };
 
     return (
-        <div>
-            {loading && !showGeneralInfo ? (
-                <div className="flex items-center justify-center h-[calc(100vh-112px)]">
-                    <div className="w-10 h-10 border-3 border-t-transparent border-[#001B48] rounded-full animate-spin" />
+        <div style={{ backgroundColor: colors.background }}>
+            <div
+                className="flex justify-between items-center rounded-2xl px-4 py-4 mb-4"
+                style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}
+            >
+                <div className="flex items-center gap-3">
+                    <FaSailboat style={{ color: colors.accent }} />
+                    <span className="font-bold text-[20px] lg:text-[24px]" style={{ color: colors.textPrimary }}>
+                        Yachts Name - {title}
+                    </span>
                 </div>
-            ) : (
-                <>
-                    <BreadCrum yacht={yacht} />
-                    <div className={`${showGeneralInfo === false ? "flex flex-col lg:flex-row gap-2" : ""} mt-4`}>
-                        <div className={`${showGeneralInfo === false ? "w-full lg:w-[70%] xl:w-[75%]" : ""} bg-white shadow-xs rounded-2xl px-5 py-5 overflow-hidden h-fit`}>
-                            {activeIndex === 0 && (
-                                showGeneralInfo ?
-                                    <YachtsUpdate goToPrevTab={() => setShowGeneralInfo(false)} id={id} />
-                                    :
-                                    <Yachts goToNextTab={() => setShowGeneralInfo(true)} yacht={yacht} />
-                            )}
+                <button
+                    onClick={() => router.push("/yachts/addnewyachts")}
+                    className="px-[16px] py-[7px] rounded-full font-medium cursor-pointer transition-opacity hover:opacity-80"
+                    style={{ backgroundColor: colors.accent, color: "#000" }}
+                >
+                    + Add New Yachts
+                </button>
+            </div>
+
+            <div className="flex flex-col lg:flex-row gap-4">
+                <div
+                    className="w-full lg:w-[70%] xl:w-[75%] rounded-2xl px-5 py-5"
+                    style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}
+                >
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 pb-5 mb-5 border-b" style={divider}>
+                        {leftFields.filter(f => f.value).map((f, i) => (
+                            <div key={i}>
+                                <div className="text-xs font-bold mb-0.5" style={{ color: colors.textSecondary }}>{f.label}</div>
+                                <div className="text-sm font-medium" style={{ color: colors.textPrimary }}>{f.value}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 pb-5 mb-5 border-b" style={divider}>
+                        {rightFields.filter(f => f.value).map((f, i) => (
+                            <div key={i}>
+                                <div className="text-xs font-bold mb-0.5" style={{ color: colors.textSecondary }}>
+                                    {f.label}
+                                    {f.optional && <span className="font-normal ml-1" style={{ color: colors.textSecondary }}>(Optional)</span>}
+                                </div>
+                                <div className="text-sm font-medium" style={{ color: colors.textPrimary }}>{f.value}</div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {tags.length > 0 && (
+                        <div className="pb-5 mb-5 border-b" style={divider}>
+                            <div className="text-xs font-bold mb-2" style={{ color: colors.textSecondary }}>Tags</div>
+                            <div className="flex flex-wrap gap-2">
+                                {tags.map((tag: string, i: number) => (
+                                    <span
+                                        key={i}
+                                        className="px-3 py-1 rounded-full text-xs font-medium"
+                                        style={{ backgroundColor: `${colors.accent}20`, color: colors.accent }}
+                                    >
+                                        {tag}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                        <div className={`${showGeneralInfo === false ? "w-full lg:w-[30%] xl:w-[26%]" : ""}`}>
-                            {activeIndex === 0 && (
-                                showGeneralInfo ?
-                                    null
-                                    :
-                                    <Yacht yacht={yacht} />
+                    )}
+
+                    <div>
+                        {richSections.map(s => richHtml[s.label] && (
+                            <div key={s.label} className="pb-5 mb-5 border-b last:border-0 last:mb-0 last:pb-0" style={divider}>
+                                <div className="text-sm font-bold mb-3" style={{ color: colors.textPrimary }}>{s.label}</div>
+                                <div
+                                    className="rich-html-content max-w-full text-sm overflow-x-auto"
+                                    style={{ color: colors.textPrimary }}
+                                    dangerouslySetInnerHTML={{ __html: richHtml[s.label] }}
+                                />
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-between pt-4 border-t mt-4" style={divider}>
+                        <button
+                            onClick={() => router.push("/yachts")}
+                            className="rounded-full px-[16px] py-[7px] border flex items-center gap-1 cursor-pointer font-medium text-sm transition-opacity hover:opacity-80"
+                            style={{ borderColor: colors.cardBorder, color: colors.textPrimary, backgroundColor: colors.hoverBg }}
+                        >
+                            <MdKeyboardArrowLeft /> Back
+                        </button>
+                        <button
+                            onClick={() => setEditing(true)}
+                            className="rounded-full px-[16px] py-[7px] flex items-center gap-2 cursor-pointer font-medium text-sm transition-opacity hover:opacity-80"
+                            style={{ backgroundColor: colors.accent, color: "#000" }}
+                        >
+                            <MdEdit /> Edit
+                        </button>
+                    </div>
+                </div>
+
+                <div className="w-full lg:w-[30%] xl:w-[26%] flex flex-col gap-3">
+                    <div className="rounded-2xl px-3 py-3" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}>
+                        <p className="font-bold text-[16px] mb-2 pb-2 border-b" style={{ color: colors.textPrimary, borderColor: colors.cardBorder }}>
+                            Primary Image
+                        </p>
+                        <div className="rounded-lg overflow-hidden flex justify-center" style={{ border: `1px solid ${colors.cardBorder}` }}>
+                            {coverUrl ? (
+                                <Image src={coverUrl} alt="primary" width={296} height={200} className="object-cover w-full" />
+                            ) : (
+                                <p className="p-4 text-sm" style={{ color: colors.textSecondary }}>No featured image</p>
                             )}
                         </div>
                     </div>
-                </>
-            )}
+
+                    {galleryImages.length > 0 && (
+                        <div className="rounded-2xl px-3 py-3" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}>
+                            <p className="font-bold text-[16px] mb-2 pb-2 border-b" style={{ color: colors.textPrimary, borderColor: colors.cardBorder }}>
+                                Gallery Images
+                            </p>
+                            <div className="rounded-lg p-1.5" style={{ border: `1px solid ${colors.cardBorder}` }}>
+                                <div className="grid grid-cols-3 gap-1.5">
+                                    {galleryImages.map((img: YachtGalleryImage, idx: number) => (
+                                        <Image
+                                            key={img.id ?? idx}
+                                            src={img.image_url}
+                                            alt={`Gallery ${idx + 1}`}
+                                            width={100}
+                                            height={70}
+                                            className="rounded-md w-full h-[70px] object-cover"
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex justify-end mt-2">
+                                <button
+                                    className="rounded-full px-[14px] py-[6px] flex items-center gap-2 text-sm cursor-pointer font-medium transition-opacity hover:opacity-80"
+                                    style={{ backgroundColor: colors.accent, color: "#000" }}
+                                    onClick={() => {
+                                        const html = `<html><head><style>body{font-family:sans-serif;padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#f9f9f9}img{width:100%;height:300px;object-fit:cover;border-radius:8px}</style></head><body>${galleryImages.map((img: YachtGalleryImage) => `<img src="${img.image_url}" />`).join("")}</body></html>`;
+                                        const win = window.open();
+                                        if (win) { win.document.write(html); win.document.close(); }
+                                    }}
+                                >
+                                    See All <IoEyeOutline />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {y?.video_link?.trim() && (
+                        <div className="rounded-2xl px-3 py-3" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}>
+                            <p className="font-bold text-[16px] mb-2 pb-2 border-b" style={{ color: colors.textPrimary, borderColor: colors.cardBorder }}>
+                                Video
+                            </p>
+                            <div className="rounded-lg overflow-hidden" style={{ border: `1px solid ${colors.cardBorder}` }}>
+                                <iframe
+                                    src={getEmbedUrl(y.video_link)}
+                                    width="100%"
+                                    height="160"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                                    allowFullScreen
+                                    className="block"
+                                    title="Yacht Video"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
-    )
-}
+    );
+};
 
 export default YachtsDetail;

@@ -230,3 +230,29 @@ input[type="number"]::-ms-clear {
 input[type="number"]::-ms-reveal {
   display: none;
 }
+
+.rich-html-content {
+  background-color: #ffffff;
+  color: #111111;
+  padding: 8px;
+  border-radius: 6px;
+}
+.rich-html-content * {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  border-color: #d1d5db !important;
+}
+.rich-html-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.rich-html-content td,
+.rich-html-content th {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db !important;
+  vertical-align: middle;
+}
+.rich-html-content p { margin: 0.5em 0; }
+.rich-html-content ul, .rich-html-content ol { padding-left: 1.5em; margin: 0.5em 0; }
+.rich-html-content li { margin: 0.25em 0; }
+.rich-html-content h1, .rich-html-content h2, .rich-html-content h3 { margin: 0.75em 0 0.4em; font-weight: 700; }

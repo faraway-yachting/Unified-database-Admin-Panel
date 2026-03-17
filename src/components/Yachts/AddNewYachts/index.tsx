@@ -107,8 +107,8 @@ const AddNewYachts: React.FC = () => {
     const files = e.target.files;
     if (files && files[0]) {
       const file = files[0];
-      if (file.size > 1 * 1024 * 1024) {
-        formik.setFieldError("Primary Image", "File must be 1MB or smaller");
+      if (file.size > 10 * 1024 * 1024) {
+        formik.setFieldError("Primary Image", "File must be 10MB or smaller");
         e.target.value = "";
         return;
       }

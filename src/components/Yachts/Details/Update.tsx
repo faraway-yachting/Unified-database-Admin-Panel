@@ -67,9 +67,9 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
     const files = e.target.files;
     if (files && files[0]) {
       const file = files[0];
-      if (file.size > 1 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         formik.setFieldTouched("Primary Image", true, false);
-        formik.setFieldError("Primary Image", "File must be 1MB or smaller");
+        formik.setFieldError("Primary Image", "File must be 10MB or smaller");
         e.target.value = "";
         return;
       }

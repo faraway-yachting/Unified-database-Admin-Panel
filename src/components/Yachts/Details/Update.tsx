@@ -8,7 +8,6 @@ import {
   useYachtByIdQuery,
   useUpdateYachtMutation,
 } from "@/lib/api/yachts";
-import { useTagsQuery } from "@/lib/api/tags";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useFormik } from "formik";
@@ -46,8 +45,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
   const router = useRouter();
   const { data: yachtData, isLoading: loading } = useYachtByIdQuery(id as string);
   const yachts = yachtData?.yachts ?? null;
-  const { data: tagsData } = useTagsQuery();
-  const allTags = tagsData?.tags ?? [];
+  const allTags = [{ _id: "super-yacht", Name: "super yacht" }, { _id: "overnight", Name: "overnight" }];
   const updateYachtMutation = useUpdateYachtMutation();
 
   // Close tags dropdown when clicking outside
@@ -161,6 +159,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
   const formik = useFormik<FormYachtsUpdateValues>({
     enableReinitialize: true,
     initialValues: {
+      "Display Order": yachts?.displayOrder ?? null,
       "Boat Type": yachts?.boatType ?? "",
       Title: tr?.title ?? yachts?.name ?? "",
       Category: yachts?.charterType ?? "",
@@ -204,6 +203,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
         const errors = await formik.validateForm();
         if (Object.keys(errors).length > 0) {
           formik.setTouched({
+            "Display Order": true,
             "Boat Type": true,
             Category: true,
             Capacity: true,
@@ -281,6 +281,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
             code: values["Code"] ?? "",
             type: values["Yacht Type"],
             tags: (values["Tags"] ?? []).filter((t: string | undefined): t is string => typeof t === "string"),
+            displayOrder: values["Display Order"] ?? null,
           },
           yachtsId: id.toString(),
         });
@@ -327,6 +328,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                     "";
                   const isDropdown = field.type === "dropdown";
                   const isNumber = [
+                    "Display Order",
                     "Length",
                     "Cabins",
                     "Bathrooms",
@@ -547,55 +549,38 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                 className="cursor-pointer"
                               />
                             ) : (
-                              <>
-                                <div className="flex items-center justify-between">
-                                  <p className="text-[#222222] font-medium">
-                                    {(() => {
-                                      const primaryImage =
-                                        formik.values["Primary Image"];
-                                      if (!primaryImage)
-                                        return "No file selected";
-
-                                      if (primaryImage instanceof File) {
-                                        const name = primaryImage.name;
-                                        const extMatch =
-                                          name.match(/\.[^/.]+$/);
-                                        const ext = extMatch ? extMatch[0] : "";
-                                        const firstWord = name
-                                          .replace(/\.[^/.]+$/, "")
-                                          .split(/[ .]/)[0]
-                                          .slice(0, 5);
-                                        return `${firstWord}${ext}`;
-                                      } else if (
-                                        typeof primaryImage === "string"
-                                      ) {
-                                        const parts = primaryImage.split("/");
-                                        const filename =
-                                          parts[parts.length - 1];
-                                        const extMatch =
-                                          filename.match(/\.[^/.]+$/);
-                                        const ext = extMatch ? extMatch[0] : "";
-                                        const nameWithoutExt = filename.replace(
-                                          /\.[^/.]+$/,
-                                          ""
-                                        );
-                                        if (nameWithoutExt.length > 5) {
-                                          return `${nameWithoutExt.slice(
-                                            0,
-                                            5
-                                          )}${ext}`;
-                                        }
-                                        return filename;
-                                      }
-                                      return "No file selected";
-                                    })()}
-                                  </p>
-                                  <MdDeleteOutline
-                                    className="cursor-pointer text-red-500"
-                                    onClick={handleDelete}
+                              <div className="flex items-center justify-between gap-2">
+                                {typeof formik.values["Primary Image"] === "string" && (
+                                  <img
+                                    src={formik.values["Primary Image"]}
+                                    alt="primary"
+                                    className="w-10 h-10 object-cover rounded"
                                   />
-                                </div>
-                              </>
+                                )}
+                                <p className="text-[#222222] font-medium flex-1 truncate text-sm">
+                                  {(() => {
+                                    const primaryImage = formik.values["Primary Image"];
+                                    if (!primaryImage) return "No file selected";
+                                    if (primaryImage instanceof File) {
+                                      const name = primaryImage.name;
+                                      const ext = name.match(/\.[^/.]+$/)?.[0] ?? "";
+                                      return `${name.replace(/\.[^/.]+$/, "").split(/[ .]/)[0].slice(0, 10)}${ext}`;
+                                    }
+                                    if (typeof primaryImage === "string") {
+                                      const cleanUrl = primaryImage.split("?")[0];
+                                      const filename = cleanUrl.split("/").pop() ?? "";
+                                      const ext = filename.match(/\.[^/.]+$/)?.[0] ?? "";
+                                      const base = filename.replace(/\.[^/.]+$/, "");
+                                      return base.length > 12 ? `${base.slice(0, 12)}${ext}` : filename;
+                                    }
+                                    return "No file selected";
+                                  })()}
+                                </p>
+                                <MdDeleteOutline
+                                  className="cursor-pointer text-red-500 flex-shrink-0"
+                                  onClick={handleDelete}
+                                />
+                              </div>
                             )}
                           </div>
                           {fieldError && (
@@ -806,14 +791,12 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
         })}
         {RichTextEditorSections.map((section) => {
           return (
-            <div key={section.id} className="mt-4 grid lg:grid-cols-2 gap-2">
-              <p className="font-bold text-[#222222]">{section.label}</p>
-              <div className="w-full">
-                <RichTextEditor
-                  value={formik.values[section.label as RichTextFieldKey] ?? ""}
-                  onChange={(html) => formik.setFieldValue(section.label, html)}
-                />
-              </div>
+            <div key={section.id} className="mt-4">
+              <p className="font-bold mb-2 text-[#222222]">{section.label}</p>
+              <RichTextEditor
+                value={formik.values[section.label as RichTextFieldKey] ?? ""}
+                onChange={(html) => formik.setFieldValue(section.label, html)}
+              />
             </div>
           );
         })}

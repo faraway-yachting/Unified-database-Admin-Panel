@@ -113,8 +113,9 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
         { label: "Status", value: y?.status },
     ];
 
-    const galleryImages: YachtGalleryImage[] = y?.images ?? [];
-    const coverUrl = y?.primaryImage ?? galleryImages.find(i => i.isCover)?.imageUrl ?? galleryImages[0]?.imageUrl ?? null;
+    const galleryImages: YachtGalleryImage[] = (y?.images ?? []).filter(i => i.imageUrl?.startsWith('http'));
+    const rawCover = y?.primaryImage?.startsWith('http') ? y.primaryImage : null;
+    const coverUrl = rawCover ?? galleryImages.find(i => i.isCover)?.imageUrl ?? galleryImages[0]?.imageUrl ?? null;
     const rawTags: YachtTag[] = y?.tags ?? [];
     const enTags = rawTags.filter(t => t.locale === "en");
     const tagSource = enTags.length > 0 ? enTags : rawTags;

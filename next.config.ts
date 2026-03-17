@@ -40,6 +40,16 @@ const nextConfig: NextConfig = {
         hostname: "*.s3.*.amazonaws.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "*.s3.amazonaws.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "faraway-admin-bucket.s3.ap-southeast-1.amazonaws.com",
+        pathname: "/**",
+      },
     ],
     unoptimized: false,
     formats: ["image/webp", "image/avif"],

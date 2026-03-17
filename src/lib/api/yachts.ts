@@ -256,6 +256,7 @@ export interface AddYachtsPayload {
   code?: string;
   title: string;
   type: string;
+  displayOrder?: number | null;
   primaryImage: File;
   galleryImages: (File | string)[];
 }
@@ -450,6 +451,7 @@ async function updateYachtApi({
     fuelCapacity: "fuel_capacity",
     waterCapacity: "water_capacity",
     videoLink: "video_link",
+    displayOrder: "display_order",
     primaryImage: "primary_image",
     dayCharter: "day_charter",
     overnightCharter: "overnight_charter",

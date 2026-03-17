@@ -23,9 +23,10 @@ function apiYachtToCardYacht(api: YachtListItem): Yacht {
   const tr = api.translations?.find(t => t.locale === 'en') ?? api.translations?.[0];
   const title = tr?.title ?? api.name ?? api.boatType ?? api.type ?? 'Yacht';
 
-  const primaryImg = api.primaryImage ?? null;
-  const galleryFirst = api.images?.[0]?.imageUrl ?? null;
-  const legacyCover = api.images?.find((i) => i.isCover)?.imageUrl ?? api.images?.[0]?.imageUrl ?? null;
+  const isValidUrl = (u: string | null | undefined) => !!u && u.startsWith('http');
+  const primaryImg = isValidUrl(api.primaryImage) ? api.primaryImage! : null;
+  const galleryFirst = isValidUrl(api.images?.[0]?.imageUrl) ? api.images![0].imageUrl : null;
+  const legacyCover = api.images?.find((i) => i.isCover && isValidUrl(i.imageUrl))?.imageUrl ?? null;
   const image = primaryImg ?? galleryFirst ?? legacyCover ?? DEFAULT_YACHT_IMAGE;
 
   const galleryUrls = api.images?.map(g => g.imageUrl).filter(Boolean);

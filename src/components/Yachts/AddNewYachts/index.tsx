@@ -386,6 +386,9 @@ const AddNewYachts: React.FC = () => {
                               {typeof formik.values["Primary Image"] === "string" && (
                                 <img src={formik.values["Primary Image"]} alt="primary" className="w-10 h-10 object-cover rounded flex-shrink-0" />
                               )}
+                              {formik.values["Primary Image"] instanceof File && (
+                                <img src={URL.createObjectURL(formik.values["Primary Image"])} alt="primary" className="w-10 h-10 object-cover rounded flex-shrink-0" />
+                              )}
                               <p className="font-medium flex-1 truncate text-sm" style={{ color: colors.textPrimary }}>
                                 {formik.values["Primary Image"] instanceof File
                                   ? formik.values["Primary Image"].name.slice(0, 20)
@@ -399,6 +402,10 @@ const AddNewYachts: React.FC = () => {
                                       })()
                                   : "Selected"}
                               </p>
+                              <label className="cursor-pointer text-xs px-2 py-1 rounded flex-shrink-0" style={{ backgroundColor: colors.accent, color: "#fff" }}>
+                                Replace
+                                <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                              </label>
                               <MdDeleteOutline className="cursor-pointer flex-shrink-0" style={{ color: colors.danger }} onClick={handleDelete} />
                             </div>
                           )}

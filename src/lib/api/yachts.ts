@@ -478,8 +478,7 @@ async function updateYachtApi({
 
   const { data } = await apiClient.patch(
     config.api.yachts.update(yachtsId),
-    form,
-    { headers: { "Content-Type": "multipart/form-data" } }
+    form
   );
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");

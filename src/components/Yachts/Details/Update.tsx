@@ -554,7 +554,14 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                   <img
                                     src={formik.values["Primary Image"]}
                                     alt="primary"
-                                    className="w-10 h-10 object-cover rounded"
+                                    className="w-10 h-10 object-cover rounded flex-shrink-0"
+                                  />
+                                )}
+                                {formik.values["Primary Image"] instanceof File && (
+                                  <img
+                                    src={URL.createObjectURL(formik.values["Primary Image"])}
+                                    alt="primary"
+                                    className="w-10 h-10 object-cover rounded flex-shrink-0"
                                   />
                                 )}
                                 <p className="text-[#222222] font-medium flex-1 truncate text-sm">
@@ -576,6 +583,10 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                     return "No file selected";
                                   })()}
                                 </p>
+                                <label className="cursor-pointer text-xs px-2 py-1 rounded flex-shrink-0 bg-blue-600 text-white">
+                                  Replace
+                                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                                </label>
                                 <MdDeleteOutline
                                   className="cursor-pointer text-red-500 flex-shrink-0"
                                   onClick={handleDelete}

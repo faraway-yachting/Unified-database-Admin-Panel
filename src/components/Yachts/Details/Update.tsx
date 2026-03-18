@@ -321,7 +321,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                   {section.section}
                 </h2>
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {section.fields.map((field, index) => {
                   const value =
                     formik.values[field.label as keyof typeof formik.values] ??
@@ -354,7 +354,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                     return (
                       <div
                         key={index}
-                        className="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2 xl:col-span-4"
+                        className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4"
                       >
                         <label className="flex items-center gap-2 w-fit">
                           <input
@@ -407,7 +407,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                       key={index}
                       className={`${
                         isFileUpload
-                          ? "col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2 xl:col-span-4"
+                          ? "col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4"
                           : ""
                       }`}
                     >
@@ -665,14 +665,14 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                               </label>
                               {Array.isArray(formik.values["Gallery Images"]) &&
                                 formik.values["Gallery Images"].length > 0 && (
-                                  <div className="mt-4 grid grid-cols-3 gap-4">
+                                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                                     {formik.values["Gallery Images"].map(
                                       (item: ImageItem, index: number) => {
                                         if (item.type === "url") {
                                           return (
                                             <div
                                               key={index}
-                                              className="relative w-[100px] h-[100px]"
+                                              className="relative w-full aspect-square max-w-[100px]"
                                             >
                                               <Image
                                                 src={item.value as string}
@@ -696,7 +696,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                           return (
                                             <div
                                               key={index}
-                                              className="relative w-[100px] h-[100px]"
+                                              className="relative w-full aspect-square max-w-[100px]"
                                             >
                                               <Image
                                                 src={URL.createObjectURL(

@@ -49,7 +49,7 @@ export function RevenueChart({ data, seriesConfig }: RevenueChartProps) {
 
   return (
     <div
-      className="rounded-xl p-6 border backdrop-blur-sm h-[360px]"
+      className="rounded-xl p-4 sm:p-6 border backdrop-blur-sm h-[280px] sm:h-[320px] lg:h-[360px]"
       style={{
         backgroundColor: colors.cardBg,
         borderColor: colors.cardBorder,

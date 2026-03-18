@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Ship, CheckCircle, Wrench, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
+import { yachtSlug } from "@/lib/utils";
 import { useFleetTopBarActions, defaultFleetFilters } from "@/context/FleetTopBarActionsContext";
 import {
   useYachtsQuery,
@@ -41,6 +42,7 @@ function apiYachtToCardYacht(api: YachtListItem): Yacht {
   return {
     id: api.id,
     name: title,
+    slug: api.slug || tr?.slug || undefined,
     type: yachtTypeToDisplay(api.type),
     image,
     images,
@@ -131,7 +133,7 @@ export default function FleetManagement() {
     <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
       <div className="pt-[72px] p-4 md:p-6 lg:p-8">
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
           <FleetKPICard
             icon={Ship}
             label="Total Yachts"
@@ -206,13 +208,13 @@ export default function FleetManagement() {
         {/* Fleet Grid */}
         {!isLoading && !isError && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
               {cardYachts.map((yacht) => (
                 <YachtCard
                   key={yacht.id}
                   yacht={yacht}
-                  onClick={() => router.push(`/yachts/${yacht.id}`)}
-                  onEdit={() => router.push(`/yachts/${yacht.id}?edit=true`)}
+                  onClick={() => router.push(`/yachts/${yacht.slug || yachtSlug(yacht.id, yacht.name)}`)}
+                  onEdit={() => router.push(`/yachts/${yacht.slug || yachtSlug(yacht.id, yacht.name)}?edit=true`)}
                 />
               ))}
             </div>

@@ -154,7 +154,7 @@ export default function PackageBuilder() {
     <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
       <div className="pt-[72px] p-4 md:p-6 lg:p-8">
         {/* Row 1 - KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
           <PackageKPICard
             icon={Package}
             label="Total Packages"

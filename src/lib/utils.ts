@@ -30,6 +30,13 @@ export function handleApiError(error: unknown): string {
 }
 
 // Utility function to validate image URLs
+export function yachtSlug(id: string, name?: string): string {
+  return (name || id)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 export function isValidImageUrl(url: string): boolean {
   if (!url) return false;
   try {

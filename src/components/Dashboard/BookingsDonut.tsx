@@ -25,7 +25,7 @@ export function BookingsDonut({ data }: BookingsDonutProps) {
 
   return (
     <div
-      className="rounded-xl p-6 border backdrop-blur-sm flex flex-col h-[360px] overflow-hidden"
+      className="rounded-xl p-4 sm:p-6 border backdrop-blur-sm flex flex-col h-[280px] sm:h-[320px] lg:h-[360px] overflow-hidden"
       style={{
         backgroundColor: colors.cardBg,
         borderColor: colors.cardBorder,

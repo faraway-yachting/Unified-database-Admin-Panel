@@ -57,7 +57,7 @@ export function RecentBookingsTable({ bookings }: RecentBookingsTableProps) {
 
   return (
     <div
-      className="rounded-xl p-6 border backdrop-blur-sm"
+      className="rounded-xl p-4 md:p-6 border backdrop-blur-sm"
       style={{
         backgroundColor: colors.cardBg,
         borderColor: colors.cardBorder,
@@ -78,8 +78,8 @@ export function RecentBookingsTable({ bookings }: RecentBookingsTableProps) {
         </p>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
+      <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+        <table className="w-full min-w-[700px]">
           <thead>
             <tr style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
               <th

@@ -6,13 +6,6 @@ const BACKEND =
 async function proxy(req: NextRequest) {
   const { pathname, search } = new URL(req.url);
   const target = `${BACKEND}${pathname}${search}`;
-  const contentType = req.headers.get("content-type") || "";
-  const contentLength = req.headers.get("content-length") || "0";
-
-  console.log(`[PROXY] ${req.method} ${pathname} -> ${target}`);
-  console.log(`[PROXY] Content-Type: ${contentType}`);
-  console.log(`[PROXY] Content-Length: ${contentLength}`);
-
   const headers = new Headers(req.headers);
   headers.delete("host");
   headers.delete("connection");
@@ -30,8 +23,6 @@ async function proxy(req: NextRequest) {
 
   try {
     const upstream = await fetch(target, init);
-    console.log(`[PROXY] Response: ${upstream.status}`);
-
     const respHeaders = new Headers(upstream.headers);
     respHeaders.delete("transfer-encoding");
 
@@ -40,7 +31,6 @@ async function proxy(req: NextRequest) {
       headers: respHeaders,
     });
   } catch (err) {
-    console.error(`[PROXY] Error:`, err);
     return new Response(JSON.stringify({ error: "Proxy failed", detail: String(err) }), {
       status: 502,
     });

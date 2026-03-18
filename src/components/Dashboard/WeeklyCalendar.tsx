@@ -71,7 +71,7 @@ export function WeeklyCalendar({ events: propEvents }: WeeklyCalendarProps) {
 
   return (
     <div
-      className="rounded-xl p-6 border backdrop-blur-sm"
+      className="rounded-xl p-4 sm:p-6 border backdrop-blur-sm"
       style={{
         backgroundColor: colors.cardBg,
         borderColor: colors.cardBorder,
@@ -136,7 +136,7 @@ export function WeeklyCalendar({ events: propEvents }: WeeklyCalendarProps) {
         )}
       </div>
 
-      <div className="grid grid-cols-7 gap-3">
+      <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-3">
         {days.map((day, index) => (
           <div
             key={`${day.date}-${day.dayName}-${index}`}

@@ -18,6 +18,7 @@ import { useCharterCompaniesQuery } from "@/lib/api/charterCompanies";
 import { NewYachtsData, RichTextEditorSections } from "@/data/Yachts";
 import RichTextEditor from "@/common/TextEditor";
 import Tick from "@/icons/Tick";
+import { yachtSlug } from "@/lib/utils";
 import {
   yachtsUpdateValidationSchema,
   FormYachtsUpdateValues,
@@ -224,7 +225,7 @@ const AddNewYachts: React.FC = () => {
         });
 
         toast.success("Yacht created successfully", {
-          onClose: () => router.push(`/yachts/${newId}`),
+          onClose: () => router.push(`/yachts/${(values["Slug"] as string) || yachtSlug(newId, values["Title"] as string)}`),
         });
         formik.resetForm();
       } catch (error) {
@@ -293,7 +294,7 @@ const AddNewYachts: React.FC = () => {
                 {section.section}
               </h2>
             )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {section.fields.map((field, index) => {
                 const value = formik.values[field.label as keyof typeof formik.values] ?? "";
                 const isDropdown = field.type === "dropdown";
@@ -308,7 +309,7 @@ const AddNewYachts: React.FC = () => {
 
                 if (isCheckbox) {
                   return (
-                    <div key={index} className="col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2 xl:col-span-4">
+                    <div key={index} className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4">
                       <label className="flex items-center gap-2 w-fit">
                         <input type="radio" name="Length Range" value={field.label} checked={formik.values["Length Range"] === field.label}
                           onChange={(e) => { formik.setFieldValue("Length Range", e.target.value); formik.setFieldTouched("Length Range", true, false); }}
@@ -325,7 +326,7 @@ const AddNewYachts: React.FC = () => {
                 }
 
                 return (
-                  <div key={index} className={isFileUpload ? "col-span-1 sm:col-span-2 md:col-span-3 lg:col-span-2 xl:col-span-4" : ""}>
+                  <div key={index} className={isFileUpload ? "col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4" : ""}>
                     <div className="flex items-center gap-1 mb-2">
                       <label className="block font-bold" style={labelStyle}>{field.label}</label>
                       {field.required && <span style={{ color: colors.danger }}>*</span>}
@@ -425,9 +426,9 @@ const AddNewYachts: React.FC = () => {
                               <p>JPEG, PNG (Max size 10MB)</p>
                             </label>
                             {Array.isArray(formik.values["Gallery Images"]) && (formik.values["Gallery Images"] as ImageItem[]).length > 0 && (
-                              <div className="mt-4 grid grid-cols-3 gap-4">
+                              <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                                 {(formik.values["Gallery Images"] as ImageItem[]).map((item, idx) => (
-                                  <div key={idx} className="relative w-[100px] h-[100px]">
+                                  <div key={idx} className="relative w-full aspect-square max-w-[100px]">
                                     <Image src={item.type === "url" ? (item.value as string) : URL.createObjectURL(item.value as File)} alt={`gallery-${idx}`} width={100} height={100} className="w-[100px] h-[100px] object-cover rounded-lg" />
                                     <button type="button" onClick={() => handleRemoveImage(idx)} className="absolute top-1 right-1 rounded-md p-1 shadow-lg cursor-pointer" style={{ border: `1px solid ${colors.cardBorder}`, backgroundColor: colors.cardBg }}>
                                       <MdDeleteOutline style={{ color: colors.danger }} />

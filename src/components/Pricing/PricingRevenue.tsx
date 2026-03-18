@@ -359,7 +359,7 @@ export default function PricingRevenue() {
   return (
     <div className="p-4 md:p-6 lg:p-8">
       {/* Row 1 - KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-6 md:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4 lg:gap-6 mb-6 md:mb-8">
         <PricingKPICard
           icon={DollarSign}
           label="Total Revenue"
@@ -485,8 +485,8 @@ export default function PricingRevenue() {
               Quick Filters
             </h3>
           </div>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="min-w-[220px] flex-1">
+          <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+            <div className="min-w-0 w-full sm:min-w-[220px] sm:flex-1">
               <label
                 className="text-xs font-semibold uppercase tracking-wide mb-2 block"
                 style={{ color: colors.textSecondary }}
@@ -544,8 +544,8 @@ export default function PricingRevenue() {
               Quick Filters
             </h3>
           </div>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="min-w-[220px] flex-1">
+          <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+            <div className="min-w-0 w-full sm:min-w-[220px] sm:flex-1">
               <label
                 className="text-xs font-semibold uppercase tracking-wide mb-2 block"
                 style={{ color: colors.textSecondary }}
@@ -600,8 +600,8 @@ export default function PricingRevenue() {
               Quick Filters
             </h3>
           </div>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="min-w-[220px] flex-1">
+          <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+            <div className="min-w-0 w-full sm:min-w-[220px] sm:flex-1">
               <label
                 className="text-xs font-semibold uppercase tracking-wide mb-2 block"
                 style={{ color: colors.textSecondary }}

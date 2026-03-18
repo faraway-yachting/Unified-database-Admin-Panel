@@ -93,7 +93,7 @@ export function BookingsTable({
         <div className="overflow-x-auto -mx-4 md:mx-0">
           <div className="inline-block min-w-full align-middle">
             <div className="overflow-hidden">
-              <table className="min-w-full">
+              <table className="min-w-[800px]">
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${colors.cardBorder}` }}>
                     <th

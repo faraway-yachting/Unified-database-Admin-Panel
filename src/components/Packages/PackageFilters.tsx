@@ -77,8 +77,8 @@ export function PackageFilters({
         </h3>
       </div>
 
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="min-w-[220px] flex-1">
+      <div className="flex flex-wrap items-end gap-3 sm:gap-4">
+        <div className="min-w-0 w-full sm:min-w-[220px] sm:flex-1">
           <label
             className="text-xs font-semibold uppercase tracking-wide mb-2 block"
             style={{ color: colors.textSecondary }}
@@ -112,7 +112,7 @@ export function PackageFilters({
           </div>
         </div>
 
-        <div className="min-w-[180px]">
+        <div className="min-w-0 w-[calc(50%-8px)] sm:w-auto sm:min-w-[180px]">
           <label
             className="text-xs font-semibold uppercase tracking-wide mb-2 block"
             style={{ color: colors.textSecondary }}
@@ -146,7 +146,7 @@ export function PackageFilters({
           </div>
         </div>
 
-        <div className="min-w-[180px]">
+        <div className="min-w-0 w-[calc(50%-8px)] sm:w-auto sm:min-w-[180px]">
           <label
             className="text-xs font-semibold uppercase tracking-wide mb-2 block"
             style={{ color: colors.textSecondary }}
@@ -178,7 +178,7 @@ export function PackageFilters({
           </div>
         </div>
 
-        <div className="min-w-[180px]">
+        <div className="min-w-0 w-[calc(50%-8px)] sm:w-auto sm:min-w-[180px]">
           <label
             className="text-xs font-semibold uppercase tracking-wide mb-2 block"
             style={{ color: colors.textSecondary }}
@@ -210,7 +210,7 @@ export function PackageFilters({
           </div>
         </div>
 
-        <div className="min-w-[240px]">
+        <div className="min-w-0 w-full sm:min-w-[240px] sm:w-auto">
           <label
             className="text-xs font-semibold uppercase tracking-wide mb-2 block"
             style={{ color: colors.textSecondary }}

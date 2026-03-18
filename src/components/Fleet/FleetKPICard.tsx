@@ -65,7 +65,7 @@ export function FleetKPICard({
           )}
         </div>
 
-        <div className="text-3xl font-mono font-bold mb-1" style={{ color: colors.textPrimary }}>
+        <div className="text-xl sm:text-2xl lg:text-3xl font-mono font-bold mb-1" style={{ color: colors.textPrimary }}>
           {value}
         </div>
         <div className="text-sm" style={{ color: colors.textSecondary }}>

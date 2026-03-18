@@ -13,6 +13,7 @@ import { useTheme } from "@/context/ThemeContext";
 export interface Yacht {
   id: string;
   name: string;
+  slug?: string;
   type: string;
   image: string;
   images?: string[];
@@ -123,7 +124,7 @@ export function YachtCard({ yacht, onClick, onEdit }: YachtCardProps) {
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-4 md:p-6">
         <div className="mb-4">
           <h3
             className="text-lg font-bold mb-1 truncate"

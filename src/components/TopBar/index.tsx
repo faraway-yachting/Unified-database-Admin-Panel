@@ -16,7 +16,7 @@ export function TopBar({ title, actions }: TopBarProps) {
 
   return (
     <header
-      className="fixed top-0 right-0 left-0 lg:left-[240px] z-30 flex items-center justify-between px-4 md:px-6 border-b"
+      className="fixed top-0 right-0 left-0 lg:left-[240px] z-30 flex items-center justify-between pl-14 pr-4 lg:px-6 border-b"
       style={{
         height: HEADER_HEIGHT,
         backgroundColor: colors.cardBg,
@@ -24,7 +24,7 @@ export function TopBar({ title, actions }: TopBarProps) {
       }}
     >
       <h1
-        className="text-xl md:text-2xl font-bold truncate"
+        className="text-xl md:text-2xl font-bold truncate min-w-0"
         style={{ color: colors.textPrimary }}
       >
         {title}

@@ -147,6 +147,7 @@ export interface YachtTranslation {
 export interface YachtListItem {
   id: string;
   name: string;
+  slug?: string | null;
   type: string;
   boatType?: string | null;
   charterType?: string | null;

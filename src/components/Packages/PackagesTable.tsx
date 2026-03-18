@@ -35,7 +35,7 @@ export function PackagesTable({
 
   return (
     <div
-      className="rounded-xl p-6 border backdrop-blur-sm"
+      className="rounded-xl p-4 md:p-6 border backdrop-blur-sm"
       style={{
         backgroundColor: colors.cardBg,
         borderColor: colors.cardBorder,

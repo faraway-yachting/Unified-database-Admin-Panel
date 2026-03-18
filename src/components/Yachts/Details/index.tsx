@@ -71,7 +71,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
         return (
             <div className="mt-4" style={{ backgroundColor: colors.background }}>
                 <div className="rounded-2xl px-5 py-5" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}>
-                    <YachtsUpdate goToPrevTab={() => setEditing(false)} id={id} />
+                    <YachtsUpdate goToPrevTab={() => setEditing(false)} id={y?.id ?? (id as string)} />
                 </div>
             </div>
         );
@@ -134,12 +134,12 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
     return (
         <div style={{ backgroundColor: colors.background }}>
             <div
-                className="flex justify-between items-center rounded-2xl px-4 py-4 mb-4"
+                className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 rounded-2xl px-4 py-4 mb-4"
                 style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}
             >
                 <div className="flex items-center gap-3">
                     <FaSailboat style={{ color: colors.accent }} />
-                    <span className="font-bold text-[20px] lg:text-[24px]" style={{ color: colors.textPrimary }}>
+                    <span className="font-bold text-[16px] sm:text-[20px] lg:text-[24px] truncate" style={{ color: colors.textPrimary }}>
                         Yachts Name - {title}
                     </span>
                     {availableLocales.length > 1 && (
@@ -163,7 +163,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                 </div>
                 <button
                     onClick={() => router.push("/yachts/addnewyachts")}
-                    className="px-[16px] py-[7px] rounded-full font-medium cursor-pointer transition-opacity hover:opacity-80"
+                    className="px-3 sm:px-[16px] py-[7px] rounded-full font-medium cursor-pointer transition-opacity hover:opacity-80 text-sm sm:text-base whitespace-nowrap shrink-0"
                     style={{ backgroundColor: colors.accent, color: "#000" }}
                 >
                     + Add New Yachts
@@ -175,7 +175,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                     className="w-full lg:w-[70%] xl:w-[75%] rounded-2xl px-5 py-5"
                     style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}
                 >
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 pb-5 mb-5 border-b" style={divider}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 pb-5 mb-5 border-b" style={divider}>
                         {leftFields.filter(f => f.value).map((f, i) => (
                             <div key={i}>
                                 <div className="text-xs font-bold mb-0.5" style={{ color: colors.textSecondary }}>{f.label}</div>
@@ -184,7 +184,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                         ))}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-x-8 gap-y-4 pb-5 mb-5 border-b" style={divider}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4 pb-5 mb-5 border-b" style={divider}>
                         {rightFields.filter(f => f.value).map((f, i) => (
                             <div key={i}>
                                 <div className="text-xs font-bold mb-0.5" style={{ color: colors.textSecondary }}>
@@ -264,7 +264,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                                 Gallery Images
                             </p>
                             <div className="rounded-lg p-1.5" style={{ border: `1px solid ${colors.cardBorder}` }}>
-                                <div className="grid grid-cols-3 gap-1.5">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                                     {galleryImages.map((img: YachtGalleryImage, idx: number) => (
                                         <Image
                                             key={img.id ?? idx}

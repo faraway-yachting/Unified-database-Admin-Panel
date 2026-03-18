@@ -359,7 +359,7 @@ export function PackageForm({ isOpen, onClose }: PackageFormProps) {
                   Pricing & Status
                 </h4>
                 <div className="space-y-4">
-                  <div className="grid grid-cols-[1fr_120px] gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-[1fr_120px] gap-3">
                     <div>
                       <label className="text-xs font-semibold uppercase tracking-wide mb-2 block" style={{ color: colors.textSecondary }}>
                         Base Price *

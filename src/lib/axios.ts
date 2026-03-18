@@ -8,16 +8,6 @@ import { config } from "../../config";
 export const apiClient = axios.create({
   baseURL: config.baseApiUrl,
   withCredentials: true,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-apiClient.interceptors.request.use((config) => {
-  if (config.data instanceof FormData) {
-    config.headers.delete('Content-Type');
-  }
-  return config;
 });
 
 /** Mark a request as already retried after refresh to avoid infinite loop */

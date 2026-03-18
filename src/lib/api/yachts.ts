@@ -410,7 +410,7 @@ async function getYachtDetailApi(yachtId: string): Promise<{ yacht: YachtDetail 
 
 async function addYachtApi(payload: AddYachtsPayload) {
   const { data } = await apiClient.post(config.api.yachts.create, payload, {
-    headers: { "Content-Type": "multipart/form-data" },
+    headers: { "Content-Type": undefined },
   });
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
@@ -462,9 +462,10 @@ async function updateYachtApi({
   for (const [key, value] of Object.entries(payload)) {
     if (value === undefined || value === null) continue;
     const snakeKey = snakeMap[key] ?? key;
-    if (key === "primaryImage" && value instanceof File) {
-      form.append(snakeKey, value);
+    if (key === "primaryImage") {
+      if (value instanceof File) form.append(snakeKey, value);
     } else if (key === "galleryImages" && Array.isArray(value)) {
+      form.append("gallery_images_managed", "true");
       for (const img of value) {
         if (img instanceof File) form.append("gallery_images", img);
         else if (typeof img === "string") form.append("gallery_image_urls", img);
@@ -478,7 +479,8 @@ async function updateYachtApi({
 
   const { data } = await apiClient.patch(
     config.api.yachts.update(yachtsId),
-    form
+    form,
+    { headers: { 'Content-Type': undefined } }
   );
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");

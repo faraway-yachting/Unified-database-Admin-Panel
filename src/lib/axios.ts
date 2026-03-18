@@ -13,6 +13,13 @@ export const apiClient = axios.create({
   },
 });
 
+apiClient.interceptors.request.use((config) => {
+  if (config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+  }
+  return config;
+});
+
 /** Mark a request as already retried after refresh to avoid infinite loop */
 const RETRIED_KEY = "_authRetried";
 

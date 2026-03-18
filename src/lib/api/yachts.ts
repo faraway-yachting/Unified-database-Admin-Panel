@@ -409,9 +409,7 @@ async function getYachtDetailApi(yachtId: string): Promise<{ yacht: YachtDetail 
 }
 
 async function addYachtApi(payload: AddYachtsPayload) {
-  const { data } = await apiClient.post(config.api.yachts.create, payload, {
-    headers: { "Content-Type": undefined },
-  });
+  const { data } = await apiClient.post(config.api.yachts.create, payload);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
@@ -479,8 +477,7 @@ async function updateYachtApi({
 
   const { data } = await apiClient.patch(
     config.api.yachts.update(yachtsId),
-    form,
-    { headers: { 'Content-Type': undefined } }
+    form
   );
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
@@ -597,9 +594,7 @@ export function usePublishYachtMutation() {
 export async function uploadYachtImages(yachtId: string, files: File[]) {
   const formData = new FormData();
   files.forEach((file) => formData.append("images", file));
-  const { data } = await apiClient.post(config.api.yachts.uploadImages(yachtId), formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await apiClient.post(config.api.yachts.uploadImages(yachtId), formData);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
@@ -637,9 +632,7 @@ export async function uploadYachtDocument(yachtId: string, payload: AddDocumentP
   if (payload.issuedDate) formData.append("issuedDate", payload.issuedDate);
   if (payload.expiryDate) formData.append("expiryDate", payload.expiryDate);
   if (payload.notes) formData.append("notes", payload.notes);
-  const { data } = await apiClient.post(config.api.yachts.uploadDocument(yachtId), formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  const { data } = await apiClient.post(config.api.yachts.uploadDocument(yachtId), formData);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }

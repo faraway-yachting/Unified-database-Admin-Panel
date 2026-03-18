@@ -20,6 +20,7 @@ import { MdKeyboardArrowLeft } from "react-icons/md";
 import RichTextEditor from "@/common/TextEditor";
 import Tick from "@/icons/Tick";
 import { RiArrowDownSLine } from "react-icons/ri";
+import { useTheme } from "@/context/ThemeContext";
 
 interface CustomerProps {
   goToPrevTab: () => void;
@@ -41,6 +42,7 @@ type RichTextFieldKey =
 
 const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
   const [isTagsOpen, setIsTagsOpen] = useState(false);
+  const { colors } = useTheme();
 
   const router = useRouter();
   const { data: yachtData, isLoading: loading } = useYachtByIdQuery(id as string);
@@ -314,9 +316,10 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                     sectionIndex === 0 ? "" : "mt-4"
                   } ${
                     sectionIndex !== 1
-                      ? "text-[#001B48] text-[24px] pb-2 border-b border-[#CCCCCC]"
-                      : "text-[#222222]"
+                      ? "text-[24px] pb-2 border-b"
+                      : ""
                   }`}
+                  style={{ color: colors.textPrimary, borderColor: colors.cardBorder }}
                 >
                   {section.section}
                 </h2>
@@ -378,12 +381,18 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                             onBlur={formik.handleBlur}
                             className="peer hidden"
                           />
-                          <div className="w-4 h-4 cursor-pointer rounded-full border border-[#828282] bg-white flex items-center justify-center peer-checked:border-[#001B48] peer-checked:bg-[#001B48]">
+                          <div
+                            className="w-4 h-4 cursor-pointer rounded-full border flex items-center justify-center"
+                            style={{
+                              borderColor: formik.values["Length Range"] === field.label ? colors.accent : colors.textSecondary,
+                              backgroundColor: formik.values["Length Range"] === field.label ? colors.accent : "transparent",
+                            }}
+                          >
                             {formik.values["Length Range"] === field.label && (
                               <div className="w-2 h-2 rounded-full bg-white"></div>
                             )}
                           </div>
-                          <label className="block font-semibold text-[#222222] cursor-pointer">
+                          <label className="block font-semibold cursor-pointer" style={{ color: colors.textPrimary }}>
                             {field.label}
                           </label>
                         </label>
@@ -394,7 +403,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                           getFieldError(
                             "Length Range" as keyof FormYachtsUpdateValues
                           ) && (
-                            <p className="text-[#DB2828] text-sm mt-1">
+                            <p className="text-red-500 text-sm mt-1">
                               {typeof formik.errors["Length Range"] ===
                                 "string" && formik.errors["Length Range"]}
                             </p>
@@ -412,7 +421,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                       }`}
                     >
                       <div className="flex items-center gap-1 mb-2">
-                        <label className="block font-bold text-[#222222]">
+                        <label className="block font-bold" style={{ color: colors.textPrimary }}>
                           {field.label}
                         </label>
                         {field.required && (
@@ -423,8 +432,8 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                       {isTag ? (
                         <>
                         <div
-                          className={`bg-[#F0F2F4] rounded-lg px-3 py-2 w-full ${fieldError ? "border border-[#DB2828]" : ""
-                            }`}
+                          className={`rounded-lg px-3 py-2 w-full ${fieldError ? "border border-red-500" : ""}`}
+                          style={{ backgroundColor: colors.hoverBg }}
                         >
                           <div className="relative tags-dropdown">
                             <button
@@ -432,16 +441,16 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                               onClick={() => setIsTagsOpen(!isTagsOpen)}
                               className="w-full rounded-md cursor-pointer flex items-center justify-between"
                             >
-                              <span className={Array.isArray(formik.values[fieldName]) && formik.values[fieldName].length > 0 ? "text-[#222222]" : "text-[#999999]"}>
+                              <span style={{ color: Array.isArray(formik.values[fieldName]) && formik.values[fieldName].length > 0 ? colors.textPrimary : colors.textSecondary }}>
                                 {Array.isArray(formik.values[fieldName]) && formik.values[fieldName].length > 0 
                                   ? `${formik.values[fieldName].length} tags selected`
                                   : "Select tags"
                                 }
                               </span>
-                              <RiArrowDownSLine className={`transition-transform text-[#999999] ${isTagsOpen ? 'rotate-180' : ''}`} />
+                              <RiArrowDownSLine className={`transition-transform ${isTagsOpen ? 'rotate-180' : ''}`} style={{ color: colors.textSecondary }} />
                             </button>
                             {isTagsOpen && (
-                              <div className="absolute top-full left-0 scrollbar-thick right-0 z-10 mt-1 max-h-[200px] overflow-y-auto border hover:text-white border-gray-300 rounded-md bg-white shadow-lg">
+                              <div className="absolute top-full left-0 scrollbar-thick right-0 z-10 mt-1 max-h-[200px] overflow-y-auto border rounded-md shadow-lg" style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder }}>
                                 {allTags && allTags.length > 0 ? (
                                   allTags.map((tag) => (
                                     <label
@@ -464,16 +473,16 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                           : ""
                                       }`}
                                     >
-                                      <span className="text-sm text-[#222222] hover:text-white">{tag.Name}</span>
+                                      <span className="text-sm" style={{ color: colors.textPrimary }}>{tag.Name}</span>
                                       {Array.isArray(formik.values[fieldName]) && formik.values[fieldName].includes(tag.Name) && (
-                                        <span className="text-[#222222]">
+                                        <span style={{ color: colors.textPrimary }}>
                                           <Tick />
                                         </span>
                                       )}
                                     </label>
                                   ))
                                 ) : (
-                                  <div className="px-3 py-2 text-[#999999] text-sm">
+                                  <div className="px-3 py-2 text-sm" style={{ color: colors.textSecondary }}>
                                     No Tags Available
                                   </div>
                                 )}
@@ -487,7 +496,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                           </div>
                         </div>
                         {fieldError && (
-                          <p className="text-[#DB2828] text-sm mt-1">
+                          <p className="text-red-500 text-sm mt-1">
                             {typeof formik.errors[fieldName] === "string" &&
                               formik.errors[fieldName]}
                           </p>
@@ -496,9 +505,10 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                       ) : isDropdown ? (
                         <>
                           <div
-                            className={`bg-[#F0F2F4] rounded-lg px-3 py-2 w-full ${
-                              fieldError ? "border border-[#DB2828]" : ""
+                            className={`rounded-lg px-3 py-2 w-full ${
+                              fieldError ? "border border-red-500" : ""
                             }`}
+                            style={{ backgroundColor: colors.hoverBg }}
                           >
                             <select
                               name={fieldName}
@@ -508,9 +518,8 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                 formik.setFieldTouched(fieldName, true, false);
                               }}
                               onBlur={formik.handleBlur}
-                              className={`w-full outline-0 cursor-pointer ${
-                                value ? "text-[#222222]" : "text-[#999999]"
-                              }`}
+                              className="w-full outline-0 cursor-pointer bg-transparent"
+                              style={{ color: value ? colors.textPrimary : colors.textSecondary }}
                             >
                               <option value="" disabled hidden>
                                 {field.placeholder}
@@ -519,7 +528,8 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                 <option
                                   key={option}
                                   value={option}
-                                  className="text-[#222222] outline-0 pt-4"
+                                  className="outline-0 pt-4"
+                                  style={{ color: colors.textPrimary, backgroundColor: colors.cardBg }}
                                 >
                                   {option}
                                 </option>
@@ -527,7 +537,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                             </select>
                           </div>
                           {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
+                            <p className="text-red-500 text-sm mt-1">
                               {typeof formik.errors[fieldName] === "string" &&
                                 formik.errors[fieldName]}
                             </p>
@@ -536,9 +546,10 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                       ) : isPrimaryUpload ? (
                         <>
                           <div
-                            className={`text-[#222222] w-full bg-[#F0F2F4] rounded-lg px-3 py-2  ${
-                              fieldError ? "border border-[#DB2828]" : ""
+                            className={`w-full rounded-lg px-3 py-2 ${
+                              fieldError ? "border border-red-500" : ""
                             }`}
+                            style={{ backgroundColor: colors.hoverBg, color: colors.textPrimary }}
                           >
                             {!formik.values["Primary Image"] ? (
                               <input
@@ -564,7 +575,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                     className="w-10 h-10 object-cover rounded flex-shrink-0"
                                   />
                                 )}
-                                <p className="text-[#222222] font-medium flex-1 truncate text-sm">
+                                <p className="font-medium flex-1 truncate text-sm" style={{ color: colors.textPrimary }}>
                                   {(() => {
                                     const primaryImage = formik.values["Primary Image"];
                                     if (!primaryImage) return "No file selected";
@@ -595,7 +606,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                             )}
                           </div>
                           {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
+                            <p className="text-red-500 text-sm mt-1">
                               {typeof formik.errors[fieldName] === "string" &&
                                 formik.errors[fieldName]}
                             </p>
@@ -604,9 +615,10 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                       ) : isFileUpload ? (
                         <>
                           <div
-                            className={`border border-dashed border-[#C4C4C4] bg-white rounded-md py-12 px-4 text-center w-full  ${
-                              fieldError ? "border border-[#DB2828]" : ""
+                            className={`border border-dashed rounded-md py-12 px-4 text-center w-full ${
+                              fieldError ? "border-red-500" : ""
                             }`}
+                            style={{ borderColor: fieldError ? undefined : colors.cardBorder, backgroundColor: colors.cardBg }}
                           >
                             <div
                               onDrop={handleDrop}
@@ -618,7 +630,8 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                   false
                                 )
                               }
-                              className="text-[#B3B3B3] font-normal text-[14px] flex flex-col items-center cursor-pointer"
+                              className="font-normal text-[14px] flex flex-col items-center cursor-pointer"
+                              style={{ color: colors.textSecondary }}
                             >
                               <input
                                 type="file"
@@ -656,7 +669,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                   />
                                   <p>
                                     Drop file to attach or{" "}
-                                    <span className="text-[#0080A7] underline">
+                                    <span className="underline" style={{ color: colors.accent }}>
                                       browser
                                     </span>
                                   </p>
@@ -686,9 +699,10 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                                 onClick={() =>
                                                   handleRemoveImage(index)
                                                 }
-                                                className="absolute top-1 right-1 border border-[#CCCCCC] cursor-pointer rounded-md p-1 shadow-lg"
+                                                className="absolute top-1 right-1 border cursor-pointer rounded-md p-1 shadow-lg"
+                                                style={{ borderColor: colors.cardBorder, backgroundColor: colors.cardBg }}
                                               >
-                                                <MdDeleteOutline className="text-[#DB2828] hover:text-[#0080A7] text-md" />
+                                                <MdDeleteOutline className="text-red-500 text-md" />
                                               </button>
                                             </div>
                                           );
@@ -712,9 +726,10 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                                                 onClick={() =>
                                                   handleRemoveImage(index)
                                                 }
-                                                className="absolute top-1 right-1 border border-[#CCCCCC] cursor-pointer rounded-md p-1 shadow-lg"
+                                                className="absolute top-1 right-1 border cursor-pointer rounded-md p-1 shadow-lg"
+                                                style={{ borderColor: colors.cardBorder, backgroundColor: colors.cardBg }}
                                               >
-                                                <MdDeleteOutline className="text-[#DB2828] hover:text-[#0080A7] text-md" />
+                                                <MdDeleteOutline className="text-red-500 text-md" />
                                               </button>
                                             </div>
                                           );
@@ -726,7 +741,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                             </div>
                           </div>
                           {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
+                            <p className="text-red-500 text-sm mt-1">
                               {typeof formik.errors[fieldName] === "string" &&
                                 formik.errors[fieldName]}
                             </p>
@@ -749,9 +764,10 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                               formik.setFieldTouched(fieldName, true, false);
                             }}
                             onBlur={formik.handleBlur}
-                            className={`placeholder:text-[#999999] outline-none text-[#222222] w-full bg-[#F0F2F4] rounded-lg px-3 py-2  ${
-                              fieldError ? "border border-[#DB2828]" : ""
+                            className={`outline-none w-full rounded-lg px-3 py-2 ${
+                              fieldError ? "border border-red-500" : ""
                             }`}
+                            style={{ backgroundColor: colors.hoverBg, color: colors.textPrimary }}
                             onWheel={(e) => e.currentTarget.blur()}
                             onKeyDown={(e) => {
                               if (
@@ -763,7 +779,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                             }}
                           />
                           {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
+                            <p className="text-red-500 text-sm mt-1">
                               {typeof formik.errors[fieldName] === "string" &&
                                 formik.errors[fieldName]}
                             </p>
@@ -781,12 +797,13 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                               formik.setFieldTouched(fieldName, true, false);
                             }}
                             onBlur={formik.handleBlur}
-                            className={`placeholder:text-[#999999] outline-none text-[#222222] w-full bg-[#F0F2F4] rounded-lg px-3 py-2  ${
-                              fieldError ? "border border-[#DB2828]" : ""
+                            className={`outline-none w-full rounded-lg px-3 py-2 ${
+                              fieldError ? "border border-red-500" : ""
                             }`}
+                            style={{ backgroundColor: colors.hoverBg, color: colors.textPrimary }}
                           />
                           {fieldError && (
-                            <p className="text-[#DB2828] text-sm mt-1">
+                            <p className="text-red-500 text-sm mt-1">
                               {typeof formik.errors[fieldName] === "string" &&
                                 formik.errors[fieldName]}
                             </p>
@@ -803,7 +820,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
         {RichTextEditorSections.map((section) => {
           return (
             <div key={section.id} className="mt-4">
-              <p className="font-bold mb-2 text-[#222222]">{section.label}</p>
+              <p className="font-bold mb-2" style={{ color: colors.textPrimary }}>{section.label}</p>
               <RichTextEditor
                 value={formik.values[section.label as RichTextFieldKey] ?? ""}
                 onChange={(html) => formik.setFieldValue(section.label, html)}
@@ -814,7 +831,8 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
         <div className="mt-3 flex justify-between">
           <button
             onClick={goToPrevTab}
-            className="rounded-full px-[16px] py-[7px] border border-[#666666] text-[#222222] flex items-center gap-1 justify-center cursor-pointer font-medium"
+            className="rounded-full px-[16px] py-[7px] border flex items-center gap-1 justify-center cursor-pointer font-medium"
+            style={{ borderColor: colors.cardBorder, color: colors.textPrimary }}
           >
             <MdKeyboardArrowLeft />
             Back
@@ -822,9 +840,10 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
           <button
             type="submit"
             disabled={loading}
-            className={`rounded-full px-[16px] py-[8px] bg-[#001B48] hover:bg-[#222222] text-white flex items-center justify-center gap-2 font-medium ${
+            className={`rounded-full px-[16px] py-[8px] text-white flex items-center justify-center gap-2 font-medium transition-opacity hover:opacity-90 ${
               loading ? "cursor-not-allowed" : "cursor-pointer"
             }`}
+            style={{ backgroundColor: colors.accent }}
           >
             {loading ? (
               "Save ..."

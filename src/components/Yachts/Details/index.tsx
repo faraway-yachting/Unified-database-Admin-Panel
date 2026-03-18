@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { MdEdit, MdKeyboardArrowLeft } from "react-icons/md";
 import { FaSailboat } from "react-icons/fa6";
 import { IoEyeOutline } from "react-icons/io5";
@@ -32,8 +32,19 @@ const PURIFY_CONFIG = {
 
 const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) => {
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const { colors } = useTheme();
     const [editing, setEditing] = useState(defaultEdit);
+
+    const toggleEdit = (on: boolean) => {
+        setEditing(on);
+        const params = new URLSearchParams(searchParams.toString());
+        if (on) params.set("edit", "true");
+        else params.delete("edit");
+        const qs = params.toString();
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    };
     const [richHtml, setRichHtml] = useState<Record<string, string>>({});
     const [locale, setLocale] = useState("en");
     const { data, isLoading } = useYachtByIdQuery(id as string);
@@ -71,7 +82,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
         return (
             <div className="mt-4" style={{ backgroundColor: colors.background }}>
                 <div className="rounded-2xl px-5 py-5" style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}>
-                    <YachtsUpdate goToPrevTab={() => setEditing(false)} id={y?.id ?? (id as string)} />
+                    <YachtsUpdate goToPrevTab={() => toggleEdit(false)} id={y?.id ?? (id as string)} />
                 </div>
             </div>
         );
@@ -235,7 +246,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                             <MdKeyboardArrowLeft /> Back
                         </button>
                         <button
-                            onClick={() => setEditing(true)}
+                            onClick={() => toggleEdit(true)}
                             className="rounded-full px-[16px] py-[7px] flex items-center gap-2 cursor-pointer font-medium text-sm transition-opacity hover:opacity-80"
                             style={{ backgroundColor: colors.accent, color: "#000" }}
                         >

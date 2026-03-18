@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/axios";
+import { apiClient, uploadClient } from "@/lib/axios";
 import { config } from "../../../config";
 
 export interface PackageListItemCurrency {
@@ -254,7 +254,7 @@ async function createPackageApi(payload: CreatePackagePayload) {
     payload.media.forEach((file) => formData.append("media", file));
   }
 
-  const { data } = await apiClient.post(config.api.packages.create, formData);
+  const { data } = await uploadClient.post(config.api.packages.create, formData);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
@@ -366,7 +366,7 @@ export async function deleteAddon(packageId: string, addonId: string) {
 export async function uploadPackageMedia(packageId: string, files: File[]) {
   const formData = new FormData();
   files.forEach((file) => formData.append("media", file));
-  const { data } = await apiClient.post(config.api.packages.uploadMedia(packageId), formData);
+  const { data } = await uploadClient.post(config.api.packages.uploadMedia(packageId), formData);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }

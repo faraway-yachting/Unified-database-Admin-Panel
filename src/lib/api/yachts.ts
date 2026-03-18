@@ -3,7 +3,7 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { apiClient } from "@/lib/axios";
+import { apiClient, uploadClient } from "@/lib/axios";
 import { config } from "../../../config";
 
 // Backend list response shape (matches yachtService.listYachts)
@@ -475,7 +475,7 @@ async function updateYachtApi({
     }
   }
 
-  const { data } = await apiClient.patch(
+  const { data } = await uploadClient.patch(
     config.api.yachts.update(yachtsId),
     form
   );
@@ -594,7 +594,7 @@ export function usePublishYachtMutation() {
 export async function uploadYachtImages(yachtId: string, files: File[]) {
   const formData = new FormData();
   files.forEach((file) => formData.append("images", file));
-  const { data } = await apiClient.post(config.api.yachts.uploadImages(yachtId), formData);
+  const { data } = await uploadClient.post(config.api.yachts.uploadImages(yachtId), formData);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }
@@ -632,7 +632,7 @@ export async function uploadYachtDocument(yachtId: string, payload: AddDocumentP
   if (payload.issuedDate) formData.append("issuedDate", payload.issuedDate);
   if (payload.expiryDate) formData.append("expiryDate", payload.expiryDate);
   if (payload.notes) formData.append("notes", payload.notes);
-  const { data } = await apiClient.post(config.api.yachts.uploadDocument(yachtId), formData);
+  const { data } = await uploadClient.post(config.api.yachts.uploadDocument(yachtId), formData);
   if (data?.error) {
     throw new Error(data?.error?.message || "Something went wrong");
   }

@@ -41,7 +41,7 @@ const RichTextEditor: React.FC<RichTextEditorOneProps> = ({ value = "", onChange
   const fileInputRef = useRef<HTMLInputElement>(null)
   const editorWrapperRef = useRef<HTMLDivElement>(null) // Ref for the editor's main wrapper div
   const [showTableSelector, setShowTableSelector] = useState(false)
-  const [editorContent, setEditorContent] = useState<string>("")
+  const [editorContent, setEditorContent] = useState<string>(value ?? "")
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null) // State for selected image
   const lastSelectionRange = useRef<Range | null>(null) // Ref to store the last selection
   const isUpdatingRef = useRef(false) // Ref to prevent infinite loops

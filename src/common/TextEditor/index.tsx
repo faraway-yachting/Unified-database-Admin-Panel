@@ -25,6 +25,7 @@ import { Button } from "./Button";
 import { Separator } from "./Separator";
 import ImageResizeHandles from "./Image"; 
 import TableContextMenu from "./Table"; 
+import { useTheme } from "@/context/ThemeContext";
 
 interface TableDimensions {
   rows: number
@@ -37,9 +38,10 @@ type RichTextEditorOneProps = {
 }
 
 const RichTextEditor: React.FC<RichTextEditorOneProps> = ({ value = "", onChange }) => {
+  const { colors } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const editorWrapperRef = useRef<HTMLDivElement>(null) // Ref for the editor's main wrapper div
+  const editorWrapperRef = useRef<HTMLDivElement>(null)
   const [showTableSelector, setShowTableSelector] = useState(false)
   const [editorContent, setEditorContent] = useState<string>(value ?? "")
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null) // State for selected image
@@ -1294,333 +1296,123 @@ const RichTextEditor: React.FC<RichTextEditorOneProps> = ({ value = "", onChange
     )
   }
 
-  return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden relative">
-      {/* Toolbar */}
-      <div className="border-b border-gray-200 p-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Text Formatting */}
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => formatText("bold")}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Bold (Ctrl+B)"
-            >
-              <Bold className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => formatText("italic")}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Italic (Ctrl+I)"
-            >
-              <Italic className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => formatText("underline")}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Underline (Ctrl+U)"
-            >
-              <Underline className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => formatText("strikeThrough")}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Strikethrough"
-            >
-              <Strikethrough className="h-4 w-4" />
-            </Button>
-          </div>
-          <Separator orientation="vertical" className="h-6" />
+  const toolbarBtnClass = "h-8 w-8 p-0 cursor-pointer rounded-md transition-colors"
 
-          {/* Font Family */}
+  const ToolGroup = ({ children }: { children: React.ReactNode }) => (
+    <div className="flex items-center gap-0.5 px-1 py-0.5 rounded-md" style={{ backgroundColor: `${colors.hoverBg}80` }}>
+      {children}
+    </div>
+  )
+
+  return (
+    <div className="rounded-xl border overflow-hidden relative" style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder }}>
+      <div className="border-b px-3 py-2" style={{ borderColor: colors.cardBorder, backgroundColor: colors.background }}>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <ToolGroup>
+            <Button type="button" variant="ghost" size="sm" onClick={() => formatText("bold")} className={toolbarBtnClass} title="Bold (Ctrl+B)"><Bold className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => formatText("italic")} className={toolbarBtnClass} title="Italic (Ctrl+I)"><Italic className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => formatText("underline")} className={toolbarBtnClass} title="Underline (Ctrl+U)"><Underline className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => formatText("strikeThrough")} className={toolbarBtnClass} title="Strikethrough"><Strikethrough className="h-4 w-4" /></Button>
+          </ToolGroup>
+
+          <Separator orientation="vertical" className="h-6 mx-0.5" />
+
           <select
-            className="h-8 px-2 text-sm border border-gray-300 rounded cursor-pointer"
-            onChange={(e) => {
-              restoreSelection() // Restore selection before applying fontName
-              executeCommand("fontName", e.target.value)
-            }}
+            className="h-8 px-2 text-xs border rounded cursor-pointer bg-transparent"
+            style={{ borderColor: colors.cardBorder, color: colors.textPrimary }}
+            onChange={(e) => { restoreSelection(); executeCommand("fontName", e.target.value) }}
             defaultValue="Arial"
             title="Font Family"
           >
-            <option value="Arial">Arial</option>
-            <option value="Verdana">Verdana</option>
-            <option value="Times New Roman">Times New Roman</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Courier New">Courier New</option>
-            <option value="Lucida Console">Lucida Console</option>
-            <option value="Impact">Impact</option>
-            <option value="Trebuchet MS">Trebuchet MS</option>
-            <option value="Comic Sans MS">Comic Sans MS</option>
-            <option value="Roboto">Roboto</option>
-            <option value="Open Sans">Open Sans</option>
-            <option value="Lato">Lato</option>
-            <option value="Montserrat">Montserrat</option>
-            <option value="Merriweather">Merriweather</option>
-            <option value="Roboto Mono">Roboto Mono</option>
+            {["Arial","Verdana","Times New Roman","Georgia","Courier New","Roboto","Open Sans","Lato","Montserrat"].map(f => (
+              <option key={f} value={f} style={{ backgroundColor: colors.cardBg }}>{f}</option>
+            ))}
           </select>
-          <Separator orientation="vertical" className="h-6" />
 
-          {/* Text Alignment */}
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              title="Align Left"
-              onClick={() => alignText("Left")}
-              className="h-8 w-8 p-0 cursor-pointer"
-            >
-              <AlignLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              title="Align Center"
-              onClick={() => alignText("Center")}
-              className="h-8 w-8 p-0 cursor-pointer"
-            >
-              <AlignCenter className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              title="Align Right"
-              onClick={() => alignText("Right")}
-              className="h-8 w-8 p-0 cursor-pointer"
-            >
-              <AlignRight className="h-4 w-4" />
-            </Button>
-          </div>
-          <Separator orientation="vertical" className="h-6" />
+          <Separator orientation="vertical" className="h-6 mx-0.5" />
 
-          {/* Lists */}
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={insertBulletList}
-              className="h-8 w-8 p-0"
-              title="Insert Bullet List cursor-pointer"
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={insertNumberedList}
-              className="h-8 w-8 p-0"
-              title="Insert Numbered List cursor-pointer"
-            >
-              <ListOrdered className="h-4 w-4" />
-            </Button>
-          </div>
-          <Separator orientation="vertical" className="h-6" />
+          <ToolGroup>
+            <Button type="button" variant="ghost" size="sm" title="Align Left" onClick={() => alignText("Left")} className={toolbarBtnClass}><AlignLeft className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" title="Align Center" onClick={() => alignText("Center")} className={toolbarBtnClass}><AlignCenter className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" title="Align Right" onClick={() => alignText("Right")} className={toolbarBtnClass}><AlignRight className="h-4 w-4" /></Button>
+          </ToolGroup>
 
-          {/* Indentation */}
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand("indent")}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Increase Indent"
-            >
-              <Indent className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand("outdent")}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Decrease Indent"
-            >
-              <Outdent className="h-4 w-4" />
-            </Button>
-          </div>
-          <Separator orientation="vertical" className="h-6" />
+          <Separator orientation="vertical" className="h-6 mx-0.5" />
 
-          {/* Links and Horizontal Rule */}
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={insertLink}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Insert Link"
-            >
-              <Link className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand("insertHorizontalRule")}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Insert Horizontal Rule"
-            >
-              <Minus className="h-4 w-4" />
-            </Button>
-          </div>
-          <Separator orientation="vertical" className="h-6" />
+          <ToolGroup>
+            <Button type="button" variant="ghost" size="sm" onClick={insertBulletList} className={toolbarBtnClass} title="Bullet List"><List className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" onClick={insertNumberedList} className={toolbarBtnClass} title="Numbered List"><ListOrdered className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => executeCommand("indent")} className={toolbarBtnClass} title="Indent"><Indent className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => executeCommand("outdent")} className={toolbarBtnClass} title="Outdent"><Outdent className="h-4 w-4" /></Button>
+          </ToolGroup>
 
-          {/* Image Upload */}
-          <input
-            type="file"
-            accept="image/*"
-            ref={fileInputRef}
-            onChange={handleImageUpload}
-            style={{ display: "none" }}
-            className="cursor-pointer"
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            className="h-8 w-8 p-0 cursor-pointer"
-            title="Insert Image"
-          >
-            <ImageIcon className="h-4 w-4" />
-          </Button>
-          <Separator orientation="vertical" className="h-6" />
+          <Separator orientation="vertical" className="h-6 mx-0.5" />
 
-          {/* Undo/Redo */}
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand("undo")}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Undo"
-            >
-              <Undo className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => executeCommand("redo")}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Redo"
-            >
-              <Redo className="h-4 w-4" />
-            </Button>
-          </div>
-          <Separator orientation="vertical" className="h-6" />
+          <ToolGroup>
+            <Button type="button" variant="ghost" size="sm" onClick={insertLink} className={toolbarBtnClass} title="Insert Link"><Link className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => executeCommand("insertHorizontalRule")} className={toolbarBtnClass} title="Horizontal Rule"><Minus className="h-4 w-4" /></Button>
+            <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="hidden" />
+            <Button type="button" variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()} className={toolbarBtnClass} title="Insert Image"><ImageIcon className="h-4 w-4" /></Button>
+          </ToolGroup>
 
-          {/* Clear Formatting */}
-          {/* <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => executeCommand("removeFormat")}
-            className="h-8 w-8 p-0 cursor-pointer"
-            title="Clear Formatting"
-          >
-            <Eraser className="h-4 w-4" />
-          </Button> */}
-          <Separator orientation="vertical" className="h-6" />
+          <Separator orientation="vertical" className="h-6 mx-0.5" />
 
-          {/* Font Size */}
+          <ToolGroup>
+            <Button type="button" variant="ghost" size="sm" onClick={() => executeCommand("undo")} className={toolbarBtnClass} title="Undo"><Undo className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => executeCommand("redo")} className={toolbarBtnClass} title="Redo"><Redo className="h-4 w-4" /></Button>
+          </ToolGroup>
+
+          <Separator orientation="vertical" className="h-6 mx-0.5" />
+
           <select
-            className="h-8 px-2 text-sm border border-gray-300 rounded cursor-pointer"
+            className="h-8 px-2 text-xs border rounded cursor-pointer bg-transparent"
+            style={{ borderColor: colors.cardBorder, color: colors.textPrimary }}
             onChange={(e) => executeCommand("fontSize", e.target.value)}
             defaultValue="3"
             title="Font Size"
           >
-            <option value="1">8pt</option>
-            <option value="2">10pt</option>
-            <option value="3">12pt</option>
-            <option value="4">14pt</option>
-            <option value="5">18pt</option>
-            <option value="6">24pt</option>
-            <option value="7">36pt</option>
+            {[{v:"1",l:"8pt"},{v:"2",l:"10pt"},{v:"3",l:"12pt"},{v:"4",l:"14pt"},{v:"5",l:"18pt"},{v:"6",l:"24pt"},{v:"7",l:"36pt"}].map(s => (
+              <option key={s.v} value={s.v} style={{ backgroundColor: colors.cardBg }}>{s.l}</option>
+            ))}
           </select>
-          {/* Font Color */}
-          <input
-            type="color"
-            className="h-8 w-12 border border-gray-300 rounded cursor-pointer"
-            onChange={(e) => executeCommand("foreColor", e.target.value)}
-            title="Text Color"
-          />
-          {/* Background Color */}
-          <input
-            type="color"
-            className="h-8 w-12 border border-gray-300 rounded cursor-pointer"
-            onChange={handleBackColorChange}
-            title="Background Color"
-          />
-        </div>
 
-        {/* Table button on a new line at the end */}
-        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1">
+            <div className="relative h-8 w-8 rounded-md overflow-hidden border" style={{ borderColor: colors.cardBorder }}>
+              <input type="color" className="absolute inset-0 w-full h-full cursor-pointer opacity-0" onChange={(e) => executeCommand("foreColor", e.target.value)} title="Text Color" />
+              <div className="w-full h-full flex items-center justify-center text-[10px] font-bold" style={{ color: colors.textPrimary }}>A</div>
+            </div>
+            <div className="relative h-8 w-8 rounded-md overflow-hidden border" style={{ borderColor: colors.cardBorder, backgroundColor: colors.hoverBg }}>
+              <input type="color" className="absolute inset-0 w-full h-full cursor-pointer opacity-0" onChange={handleBackColorChange} title="Background Color" />
+              <div className="w-full h-full flex items-center justify-center text-[10px] font-bold" style={{ color: colors.textSecondary }}>BG</div>
+            </div>
+          </div>
+
           <div className="relative">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowTableSelector((prev) => !prev)}
-              className="h-8 w-8 p-0 cursor-pointer"
-              title="Insert Table"
-            >
-              <Table className="h-4 w-4" />
-            </Button>
+            <Button type="button" variant="ghost" size="sm" onClick={() => setShowTableSelector((prev) => !prev)} className={toolbarBtnClass} title="Insert Table"><Table className="h-4 w-4" /></Button>
             {showTableSelector && (
-              <div className="absolute top-full left-0 mt-2 bg-white border border-gray-300 rounded-lg shadow-lg p-3 z-10 min-w-max">
-                <div className="text-sm text-gray-600 mb-2">Select table size:</div>
+              <div className="absolute top-full left-0 mt-2 border rounded-lg shadow-xl p-3 z-10 min-w-max" style={{ backgroundColor: colors.cardBg, borderColor: colors.cardBorder }}>
+                <div className="text-xs mb-2" style={{ color: colors.textSecondary }}>Select table size:</div>
                 <TableSelector onSelect={insertTable} />
-                {/* Removed the "Insert 3x3 Table (Ctrl+Q)" button from here */}
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Editor with Image Resize Handles */}
-      {/* Removed overflow-x-auto to prevent horizontal scrolling */}
       <div className="relative" ref={editorWrapperRef}>
-        {/* Editor */}
         <div
           ref={editorRef}
           contentEditable
-          className="h-[300px] overflow-y-auto p-6 focus:outline-none"
-          style={{
-            lineHeight: "1.6",
-            fontSize: "14px",
-          }}
+          className="min-h-[280px] max-h-[500px] overflow-y-auto p-5 focus:outline-none"
+          style={{ lineHeight: "1.7", fontSize: "14px", color: colors.textPrimary }}
           onKeyDown={handleKeyDown}
-          onInput={() => {
-            if (editorRef.current) {
-              setEditorContent(editorRef.current.innerHTML) // Update content state on every input
-            }
-          }}
-          onClick={handleEditorClick} // Handle image selection and save selection
-          onMouseUp={handleEditorMouseUp} // Save selection on mouse up
-          onContextMenu={handleContextMenu} // Handle right-click for context menu
+          onInput={() => { if (editorRef.current) setEditorContent(editorRef.current.innerHTML) }}
+          onClick={handleEditorClick}
+          onMouseUp={handleEditorMouseUp}
+          onContextMenu={handleContextMenu}
           suppressContentEditableWarning={true}
         ></div>
 
-        {/* Image Resize Handles */}
         {selectedImage && editorWrapperRef.current && (
           <ImageResizeHandles
             imgElement={selectedImage}
@@ -1630,7 +1422,6 @@ const RichTextEditor: React.FC<RichTextEditorOneProps> = ({ value = "", onChange
           />
         )}
 
-        {/* Table Context Menu */}
         {showTableContextMenu && (
           <TableContextMenu
             x={contextMenuPosition.x}

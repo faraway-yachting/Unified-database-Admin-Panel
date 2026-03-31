@@ -3,7 +3,7 @@ import { IconType } from "react-icons";
 
 interface NewYachtsFormField {
   label: string;
-  required?: string;
+  required?: boolean | string;
   placeholder?: string;
   type?: "dropdown" | "number" | "text" | "checkbox";
   options?: string[];
@@ -94,7 +94,7 @@ export const NewYachtsData: NewYachtsFormSection[] = [
         placeholder: "e.g,. http://www.youtube.com",
       },
       { label: "Badge", placeholder: "" },
-      { label: "Slug", placeholder: "", required: true },
+      { label: "Slug", placeholder: "" },
       { label: "Tags", placeholder: "", type:"dropdown" },
     ],
   },

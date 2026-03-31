@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { NewYachtsData, RichTextEditorSections } from "@/data/Yachts";
 import Image from "next/image";
 import {
@@ -57,7 +56,6 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id, initialLocale 
   const [editLocale, setEditLocale] = useState(initialLocale);
   const { colors } = useTheme();
 
-  const router = useRouter();
   const { data: yachtData, isLoading: loading } = useYachtByIdQuery(id as string);
   const yachts = yachtData?.yachts ?? null;
   const allTags = [{ _id: "super-yacht", Name: "super yacht" }, { _id: "overnight", Name: "overnight" }];

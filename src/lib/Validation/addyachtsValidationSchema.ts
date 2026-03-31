@@ -98,7 +98,7 @@ export const yachtsUpdateValidationSchema = Yup.object().shape({
   "Boat Layout": Yup.string(),
   "Video Link": Yup.string().nullable().transform((value) => value === "" ? undefined : value),
   "Badge": Yup.string(),
-  "Slug": Yup.string(),
+  "Slug": Yup.string().required("Slug is required"),
   "Design": Yup.string(),
   "Built": Yup.string(),
   "Cruising Speed": Yup.string(),

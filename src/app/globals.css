@@ -244,7 +244,10 @@ input[type="number"]::-ms-reveal {
 }
 .rich-html-content table {
   width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
+  word-break: break-word;
 }
 .rich-html-content td,
 .rich-html-content th {

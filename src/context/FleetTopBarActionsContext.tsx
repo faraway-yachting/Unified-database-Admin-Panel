@@ -10,7 +10,7 @@ import {
 
 export type FleetFilter = "all" | "available" | "booked" | "maintenance";
 
-export type FleetYachtType = "sailboat" | "motor" | "catamaran" | "gulet";
+export type FleetYachtType = "bareboat" | "crewed";
 export type FleetStatusFilter = "available" | "booked" | "maintenance" | "retired";
 
 export interface FleetFilters {

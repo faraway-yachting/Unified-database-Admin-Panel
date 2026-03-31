@@ -22,10 +22,8 @@ import {
 } from "@/context/FleetTopBarActionsContext";
 
 const YACHT_TYPES: { value: FleetYachtType; label: string }[] = [
-  { value: "sailboat", label: "Sailboat" },
-  { value: "motor", label: "Motor" },
-  { value: "catamaran", label: "Catamaran" },
-  { value: "gulet", label: "Gulet" },
+  { value: "bareboat", label: "Bareboat" },
+  { value: "crewed", label: "Crewed" },
 ];
 
 const STATUS_OPTIONS: { value: FleetStatusFilter; label: string }[] = [

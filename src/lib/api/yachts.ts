@@ -260,6 +260,7 @@ export interface AddYachtsPayload {
   displayOrder?: number | null;
   primaryImage: File;
   galleryImages: (File | string)[];
+  locale?: string;
 }
 
 export interface CreateYachtPayload {
@@ -664,13 +665,11 @@ export async function deleteYachtAvailabilityBlock(yachtId: string, blockId: str
   return data;
 }
 
-/** Map backend type to display label (sailboat | motor | catamaran | gulet). */
+/** Map backend type to display label (bareboat | crewed). */
 export function yachtTypeToDisplay(type: string): string {
   const t = type?.toLowerCase() ?? "";
-  if (t === "sailboat") return "Sailboat";
-  if (t === "motor") return "Motor Yacht";
-  if (t === "catamaran") return "Catamaran";
-  if (t === "gulet") return "Gulet";
+  if (t === "bareboat") return "Bareboat";
+  if (t === "crewed") return "Crewed";
   return type || "Yacht";
 }
 

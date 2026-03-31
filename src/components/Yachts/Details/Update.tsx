@@ -7,6 +7,7 @@ import Image from "next/image";
 import {
   useYachtByIdQuery,
   useUpdateYachtMutation,
+  type AddYachtsPayload,
 } from "@/lib/api/yachts";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -22,9 +23,20 @@ import Tick from "@/icons/Tick";
 import { RiArrowDownSLine } from "react-icons/ri";
 import { useTheme } from "@/context/ThemeContext";
 
+const SUPPORTED_LOCALES: { code: string; label: string }[] = [
+  { code: "en", label: "EN" },
+  { code: "ar", label: "AR" },
+  { code: "de", label: "DE" },
+  { code: "fr", label: "FR" },
+  { code: "ru", label: "RU" },
+  { code: "th", label: "TH" },
+  { code: "zh", label: "ZH" },
+];
+
 interface CustomerProps {
   goToPrevTab: () => void;
   id: string | number;
+  initialLocale?: string;
 }
 
 interface ImageItem {
@@ -40,8 +52,9 @@ type RichTextFieldKey =
   | "Specifications"
   | "Boat Layout";
 
-const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
+const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id, initialLocale = "en" }) => {
   const [isTagsOpen, setIsTagsOpen] = useState(false);
+  const [editLocale, setEditLocale] = useState(initialLocale);
   const { colors } = useTheme();
 
   const router = useRouter();
@@ -65,10 +78,40 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
     };
   }, [isTagsOpen]);
 
+  const scrollToFirstError = (errors: Record<string, unknown>) => {
+    const fieldOrder = [
+      "Display Order", "Boat Type", "Title", "Category", "Capacity", "Length",
+      "Length Range", "Cabins", "Bathrooms", "Passenger Day Trip", "Passenger Overnight",
+      "Guests", "Guests Range", "Day Trip Price", "Overnight Price", "Daytrip Price (Euro)",
+      "Yacht Type", "Primary Image", "Gallery Images", "Tags", "Video Link", "Badge",
+      "Slug", "Design", "Built", "Cruising Speed", "Length Overall", "Fuel Capacity",
+      "Water Capacity", "Code",
+    ];
+    const firstErrorField = fieldOrder.find((f) => errors[f]);
+    if (firstErrorField) {
+      const el = document.getElementById(`field-${firstErrorField}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        const input = el.querySelector("input,select,textarea") as HTMLElement | null;
+        input?.focus({ preventScroll: true });
+      }
+    }
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files[0]) {
       const file = files[0];
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      if (!["jpg", "jpeg"].includes(ext ?? "")) {
+        formik.setFieldTouched("Primary Image", true, false);
+        formik.setFieldError("Primary Image", "Only JPG/JPEG images are allowed");
+        e.target.value = "";
+        setTimeout(() => {
+          document.getElementById("field-Primary Image")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 50);
+        return;
+      }
       if (file.size > 10 * 1024 * 1024) {
         formik.setFieldTouched("Primary Image", true, false);
         formik.setFieldError("Primary Image", "File must be 10MB or smaller");
@@ -87,6 +130,19 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
+      const invalidFile = Array.from(files).find((file) => {
+        const ext = file.name.split(".").pop()?.toLowerCase();
+        return !["jpg", "jpeg"].includes(ext ?? "");
+      });
+      if (invalidFile) {
+        formik.setFieldTouched("Gallery Images", true, false);
+        formik.setFieldError("Gallery Images", "Only JPG/JPEG images are allowed");
+        e.target.value = "";
+        setTimeout(() => {
+          document.getElementById("field-Gallery Images")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 50);
+        return;
+      }
       const existingImages = Array.isArray(formik.values["Gallery Images"])
         ? formik.values["Gallery Images"]
         : [];
@@ -115,6 +171,18 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
     e.preventDefault();
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
+      const invalidFile = Array.from(files).find((file) => {
+        const ext = file.name.split(".").pop()?.toLowerCase();
+        return !["jpg", "jpeg"].includes(ext ?? "");
+      });
+      if (invalidFile) {
+        formik.setFieldTouched("Gallery Images", true, false);
+        formik.setFieldError("Gallery Images", "Only JPG/JPEG images are allowed");
+        setTimeout(() => {
+          document.getElementById("field-Gallery Images")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 50);
+        return;
+      }
       const existingImages = Array.isArray(formik.values["Gallery Images"])
         ? formik.values["Gallery Images"]
         : [];
@@ -157,7 +225,9 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
     }));
   };
 
-  const tr = yachts?.translations?.find(t => t.locale === 'en') ?? yachts?.translations?.[0];
+  const enTr = yachts?.translations?.find(t => t.locale === 'en');
+  const tr = yachts?.translations?.find(t => t.locale === editLocale) ?? (editLocale !== 'en' ? enTr : undefined);
+
   const formik = useFormik<FormYachtsUpdateValues>({
     enableReinitialize: true,
     initialValues: {
@@ -241,54 +311,73 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
             Code: true,
             "Yacht Type": true,
           });
+          setTimeout(() => scrollToFirstError(errors as Record<string, unknown>), 50);
           setSubmitting(false);
           return;
         }
         const galleryImages = Array.isArray(values["Gallery Images"])
           ? values["Gallery Images"].map((item: ImageItem) => item.value)
           : [];
+
+        // For non-English locales, only send translatable fields to avoid overwriting shared data
+        const isBaseLocale = editLocale === "en";
+        const payload: AddYachtsPayload = isBaseLocale
+          ? {
+              boatType: values["Boat Type"] ?? "",
+              price: values["Category"] ?? "",
+              capacity: values["Capacity"] ?? "",
+              length: values["Length"] ?? "",
+              lengthRange: values["Length Range"] ?? "",
+              title: values["Title"] ?? "",
+              cabins: values["Cabins"] ?? "",
+              bathrooms: values["Bathrooms"] ?? "",
+              passengerDayTrip: values["Passenger Day Trip"] ?? "",
+              passengerOvernight: values["Passenger Overnight"] ?? "",
+              guests: values["Guests"] ?? "",
+              guestsRange: values["Guests Range"] ?? "",
+              dayTripPrice: values["Day Trip Price"] ?? "",
+              overnightPrice: values["Overnight Price"] ?? "",
+              daytripPriceEuro: values["Daytrip Price (Euro)"] ?? "",
+              primaryImage: values["Primary Image"] as File,
+              galleryImages: galleryImages,
+              dayCharter: values["Day Charter"] ?? "",
+              overnightCharter: values["Overnight Charter"] ?? "",
+              aboutThisBoat: values["About this Boat"] ?? "",
+              specifications: values["Specifications"] ?? "",
+              boatLayout: values["Boat Layout"] ?? "",
+              videoLink: values["Video Link"] ?? "",
+              badge: values["Badge"] ?? "",
+              slug: values["Slug"] ?? "",
+              design: values["Design"] ?? "",
+              built: values["Built"] ?? "",
+              cruisingSpeed: values["Cruising Speed"] ?? "",
+              lengthOverall: values["Length Overall"] ?? "",
+              fuelCapacity: values["Fuel Capacity"] ?? "",
+              waterCapacity: values["Water Capacity"] ?? "",
+              code: values["Code"] ?? "",
+              type: values["Yacht Type"] ?? "",
+              tags: (values["Tags"] ?? []).filter((t: string | undefined): t is string => typeof t === "string"),
+              displayOrder: values["Display Order"] ?? null,
+              locale: editLocale,
+            }
+          : {
+              // Translation-only fields — omit shared fields so backend cannot overwrite other locales
+              title: values["Title"] ?? "",
+              slug: values["Slug"] ?? "",
+              dayCharter: values["Day Charter"] ?? "",
+              overnightCharter: values["Overnight Charter"] ?? "",
+              aboutThisBoat: values["About this Boat"] ?? "",
+              specifications: values["Specifications"] ?? "",
+              boatLayout: values["Boat Layout"] ?? "",
+              locale: editLocale,
+            } as AddYachtsPayload;
+
         await updateYachtMutation.mutateAsync({
-          payload: {
-            boatType: values["Boat Type"] ?? "",
-            price: values["Category"] ?? "",
-            capacity: values["Capacity"] ?? "",
-            length: values["Length"] ?? "",
-            lengthRange: values["Length Range"] ?? "",
-            title: values["Title"] ?? "",
-            cabins: values["Cabins"] ?? "",
-            bathrooms: values["Bathrooms"] ?? "",
-            passengerDayTrip: values["Passenger Day Trip"] ?? "",
-            passengerOvernight: values["Passenger Overnight"] ?? "",
-            guests: values["Guests"] ?? "",
-            guestsRange: values["Guests Range"] ?? "",
-            dayTripPrice: values["Day Trip Price"] ?? "",
-            overnightPrice: values["Overnight Price"] ?? "",
-            daytripPriceEuro: values["Daytrip Price (Euro)"] ?? "",
-            primaryImage: values["Primary Image"] as File,
-            galleryImages: galleryImages,
-            dayCharter: values["Day Charter"] ?? "",
-            overnightCharter: values["Overnight Charter"] ?? "",
-            aboutThisBoat: values["About this Boat"] ?? "",
-            specifications: values["Specifications"] ?? "",
-            boatLayout: values["Boat Layout"] ?? "",
-            videoLink: values["Video Link"] ?? "",
-            badge: values["Badge"] ?? "",
-            slug: values["Slug"] ?? "",
-            design: values["Design"] ?? "",
-            built: values["Built"] ?? "",
-            cruisingSpeed: values["Cruising Speed"] ?? "",
-            lengthOverall: values["Length Overall"] ?? "",
-            fuelCapacity: values["Fuel Capacity"] ?? "",
-            waterCapacity: values["Water Capacity"] ?? "",
-            code: values["Code"] ?? "",
-            type: values["Yacht Type"] ?? "",
-            tags: (values["Tags"] ?? []).filter((t: string | undefined): t is string => typeof t === "string"),
-            displayOrder: values["Display Order"] ?? null,
-          },
+          payload,
           yachtsId: id.toString(),
         });
         toast.success("Yachts Update successfully", {
-          onClose: () => router.push("/yachts"),
+          onClose: () => goToPrevTab(),
         });
         formik.resetForm();
       } catch (error) {
@@ -300,12 +389,47 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
     },
   });
 
+  // When locale changes (not on initial mount), update translation-specific fields
+  useEffect(() => {
+    if (!yachts) return;
+    const enTrEff = yachts.translations?.find(t => t.locale === 'en');
+    const newTr = yachts.translations?.find(t => t.locale === editLocale) ?? (editLocale !== 'en' ? enTrEff : undefined);
+    formik.setFieldValue("Title", newTr?.title ?? yachts.name ?? "");
+    formik.setFieldValue("Slug", newTr?.slug ?? "");
+    formik.setFieldValue("Day Charter", newTr?.dayCharter ?? "");
+    formik.setFieldValue("Overnight Charter", newTr?.overnightCharter ?? "");
+    formik.setFieldValue("About this Boat", newTr?.aboutThisBoat ?? "");
+    formik.setFieldValue("Specifications", newTr?.specifications ?? "");
+    formik.setFieldValue("Boat Layout", newTr?.boatLayout ?? "");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editLocale, yachts]);
+
   const getFieldError = (fieldName: keyof FormYachtsUpdateValues) => {
     return formik.touched[fieldName] && formik.errors[fieldName];
   };
 
   return (
     <>
+      <div className="flex items-center gap-2 mt-4 mb-2 flex-wrap">
+        <span className="text-xs font-semibold" style={{ color: colors.textSecondary }}>Editing language:</span>
+        <div className="flex gap-1 flex-wrap">
+          {SUPPORTED_LOCALES.map(({ code, label }) => (
+            <button
+              key={code}
+              type="button"
+              onClick={() => setEditLocale(code)}
+              className="px-2 py-0.5 rounded text-xs font-semibold uppercase transition-opacity hover:opacity-80"
+              style={{
+                backgroundColor: editLocale === code ? colors.accent : colors.hoverBg,
+                color: editLocale === code ? "#000" : colors.textSecondary,
+                border: `1px solid ${colors.cardBorder}`,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <form onSubmit={formik.handleSubmit} className="mt-4">
         {NewYachtsData.map((section, sectionIndex) => {
           return (
@@ -357,6 +481,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                     return (
                       <div
                         key={index}
+                        id={`field-${field.label}`}
                         className="col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4"
                       >
                         <label className="flex items-center gap-2 w-fit">
@@ -414,6 +539,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
                   return (
                     <div
                       key={index}
+                      id={`field-${field.label}`}
                       className={`${
                         isFileUpload
                           ? "col-span-1 sm:col-span-2 lg:col-span-3 xl:col-span-4"
@@ -839,14 +965,14 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id }) => {
           </button>
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || updateYachtMutation.isPending}
             className={`rounded-full px-[16px] py-[8px] text-white flex items-center justify-center gap-2 font-medium transition-opacity hover:opacity-90 ${
-              loading ? "cursor-not-allowed" : "cursor-pointer"
+              loading || updateYachtMutation.isPending ? "cursor-not-allowed opacity-70" : "cursor-pointer"
             }`}
             style={{ backgroundColor: colors.accent }}
           >
-            {loading ? (
-              "Save ..."
+            {updateYachtMutation.isPending ? (
+              "Saving..."
             ) : (
               <>
                 <Tick /> Save

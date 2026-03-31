@@ -23,7 +23,7 @@ export const NewYachtsData: NewYachtsFormSection[] = [
     section: "General",
     fields: [
       { label: "Display Order", placeholder: "e.g., 1", type: "number" },
-      { label: "Yacht Type", placeholder: "select type", type: "dropdown", options: ["sailboat", "motor", "catamaran", "gulet"] },
+      { label: "Yacht Type", placeholder: "select type", type: "dropdown", options: ["bareboat", "crewed"] },
       {
         label: "Boat Type",
         placeholder: "e.g,. Power",
@@ -94,7 +94,7 @@ export const NewYachtsData: NewYachtsFormSection[] = [
         placeholder: "e.g,. http://www.youtube.com",
       },
       { label: "Badge", placeholder: "" },
-      { label: "Slug", placeholder: "" },
+      { label: "Slug", placeholder: "", required: true },
       { label: "Tags", placeholder: "", type:"dropdown" },
     ],
   },

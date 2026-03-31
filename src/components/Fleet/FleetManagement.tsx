@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Ship, CheckCircle, Wrench, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
-import { yachtSlug } from "@/lib/utils";
 import { useFleetTopBarActions, defaultFleetFilters } from "@/context/FleetTopBarActionsContext";
 import {
   useYachtsQuery,
@@ -213,8 +212,8 @@ export default function FleetManagement() {
                 <YachtCard
                   key={yacht.id}
                   yacht={yacht}
-                  onClick={() => router.push(`/yachts/${yacht.slug || yachtSlug(yacht.id, yacht.name)}`)}
-                  onEdit={() => router.push(`/yachts/${yacht.slug || yachtSlug(yacht.id, yacht.name)}?edit=true`)}
+                  onClick={() => router.push(`/yachts/${yacht.id}`)}
+                  onEdit={() => router.push(`/yachts/${yacht.id}?edit=true`)}
                 />
               ))}
             </div>

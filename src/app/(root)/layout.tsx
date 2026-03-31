@@ -133,7 +133,7 @@ const IndexLayout: React.FC<Props> = ({ children }) => {
         adminRole={formatRole(user?.role ?? "")}
         adminAvatar={user?.avatarUrl}
       />
-      <div className="lg:ml-[240px] flex-1 flex flex-col min-h-screen overflow-x-hidden">
+      <div className="w-full lg:ml-[240px] lg:w-[calc(100%-240px)] flex flex-col min-h-screen overflow-x-hidden">
         {isYachts ? (
           <FleetTopBarActionsProvider>{renderMain()}</FleetTopBarActionsProvider>
         ) : isPackages ? (

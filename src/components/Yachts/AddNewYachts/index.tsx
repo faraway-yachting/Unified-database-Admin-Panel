@@ -18,7 +18,6 @@ import { useCharterCompaniesQuery } from "@/lib/api/charterCompanies";
 import { NewYachtsData, RichTextEditorSections } from "@/data/Yachts";
 import RichTextEditor from "@/common/TextEditor";
 import Tick from "@/icons/Tick";
-import { yachtSlug } from "@/lib/utils";
 import {
   yachtsUpdateValidationSchema,
   FormYachtsUpdateValues,
@@ -163,9 +162,9 @@ const AddNewYachts: React.FC = () => {
       if (hasError) { setSubmitting(false); return; }
 
       try {
-        const validTypes = ["sailboat", "motor", "catamaran", "gulet"];
+        const validTypes = ["bareboat", "crewed"];
         const yachtTypeVal = values["Yacht Type"] ?? "";
-        const yachtType = validTypes.includes(yachtTypeVal) ? yachtTypeVal : "motor";
+        const yachtType = validTypes.includes(yachtTypeVal) ? yachtTypeVal : "crewed";
         const created = await createYachtMutation.mutateAsync({
           companyId,
           regionId,
@@ -225,7 +224,7 @@ const AddNewYachts: React.FC = () => {
         });
 
         toast.success("Yacht created successfully", {
-          onClose: () => router.push(`/yachts/${(values["Slug"] as string) || yachtSlug(newId, values["Title"] as string)}`),
+          onClose: () => router.push(`/yachts/${newId}`),
         });
         formik.resetForm();
       } catch (error) {

@@ -31,7 +31,7 @@ export const defaultFleetFilters: FleetFilters = {
   status: "",
   minCapacity: 0,
   maxCapacity: 100,
-  isActive: false,
+  isActive: true,
   includeCompany: false,
   includeRegion: false,
   includeImages: false,

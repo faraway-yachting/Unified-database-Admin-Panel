@@ -136,9 +136,9 @@ export function RegionsList({
                     </div>
                     <div
                       className="text-lg font-bold font-mono"
-                      style={{ color: colors.textPrimary }}
+                      style={{ color: region.packages > 0 ? colors.textPrimary : colors.textSecondary }}
                     >
-                      {region.packages}
+                      {region.packages > 0 ? region.packages : "—"}
                     </div>
                   </div>
                   <div>
@@ -150,9 +150,9 @@ export function RegionsList({
                     </div>
                     <div
                       className="text-lg font-bold font-mono"
-                      style={{ color: colors.textPrimary }}
+                      style={{ color: region.yachts > 0 ? colors.textPrimary : colors.textSecondary }}
                     >
-                      {region.yachts}
+                      {region.yachts > 0 ? region.yachts : "—"}
                     </div>
                   </div>
                 </div>

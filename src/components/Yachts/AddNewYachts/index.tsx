@@ -12,6 +12,7 @@ import { useTheme } from "@/context/ThemeContext";
 import {
   useCreateYachtMutation,
   useUpdateYachtMutation,
+  setYachtWebsiteVisibility,
 } from "@/lib/api/yachts";
 import { useRegionsQuery } from "@/lib/api/regions";
 import { useCharterCompaniesQuery } from "@/lib/api/charterCompanies";
@@ -82,6 +83,7 @@ const AddNewYachts: React.FC = () => {
   const [regionId, setRegionId] = useState("");
   const [companyError, setCompanyError] = useState("");
   const [regionError, setRegionError] = useState("");
+  const [selectedWebsites, setSelectedWebsites] = useState<string[]>([]);
 
   const createYachtMutation = useCreateYachtMutation();
   const updateYachtMutation = useUpdateYachtMutation();
@@ -181,6 +183,13 @@ const AddNewYachts: React.FC = () => {
         const galleryImages = Array.isArray(values["Gallery Images"])
           ? values["Gallery Images"].map((item: ImageItem) => item.value)
           : [];
+
+        if (selectedWebsites.length > 0) {
+          await setYachtWebsiteVisibility(
+            newId,
+            selectedWebsites.map((regionId) => ({ regionId, isVisible: true }))
+          );
+        }
 
         await updateYachtMutation.mutateAsync({
           payload: {
@@ -481,6 +490,53 @@ const AddNewYachts: React.FC = () => {
             />
           </div>
         ))}
+
+        {/* Website Visibility */}
+        <div className="mt-4">
+          <h2 className="font-bold text-[24px] pb-2 mb-3 border-b" style={sectionHeadingStyle}>
+            Website Visibility
+          </h2>
+          <p className="text-sm mb-3" style={{ color: colors.textSecondary }}>
+            Select which websites this yacht should appear on.
+          </p>
+          {regionOptions.length === 0 ? (
+            <p className="text-sm" style={{ color: colors.textSecondary }}>No websites available. Add a region first.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {regionOptions.map((region) => {
+                const checked = selectedWebsites.includes(region.id);
+                return (
+                  <label
+                    key={region.id}
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 cursor-pointer"
+                    style={{
+                      backgroundColor: colors.hoverBg,
+                      border: `1px solid ${checked ? colors.accent : colors.cardBorder}`,
+                    }}
+                    onClick={() =>
+                      setSelectedWebsites((prev) =>
+                        checked ? prev.filter((id) => id !== region.id) : [...prev, region.id]
+                      )
+                    }
+                  >
+                    <div
+                      className="w-4 h-4 rounded flex items-center justify-center flex-shrink-0"
+                      style={{
+                        backgroundColor: checked ? colors.accent : "transparent",
+                        border: `2px solid ${checked ? colors.accent : colors.textSecondary}`,
+                      }}
+                    >
+                      {checked && <Tick />}
+                    </div>
+                    <span className="font-medium text-sm" style={{ color: colors.textPrimary }}>
+                      {region.name}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         <div className="mt-3 flex justify-between">
           <button type="button" onClick={() => router.push("/yachts")}

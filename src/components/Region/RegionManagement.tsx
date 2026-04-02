@@ -4,148 +4,47 @@ import { useState } from "react";
 import { Globe, MapPin, Package, Ship } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { RegionKPICard } from "./RegionKPICard";
-import { WorldMap, type RegionLocation } from "./WorldMap";
 import { RegionsList, type Region } from "./RegionsList";
 import { RegionDetailPanel } from "./RegionDetailPanel";
-import { RegionPerformance } from "./RegionPerformance";
 import { ActivityLog, type Activity } from "./ActivityLog";
 import { useTheme } from "@/context/ThemeContext";
 import {
   deleteRegion,
-  useRegionPerformanceQuery,
   useRegionsListQuery,
+  useAuditLogsQuery,
+  type AuditLogItem,
 } from "@/lib/api/regions";
 
-const locationsData: RegionLocation[] = [
-  {
-    id: "REG-001",
-    city: "Dubai",
-    country: "UAE",
-    lat: 25.2048,
-    lng: 55.2708,
-    packages: 12,
-    yachts: 18,
-    status: "live",
-  },
-  {
-    id: "REG-002",
-    city: "Athens",
-    country: "Greece",
-    lat: 37.9838,
-    lng: 23.7275,
-    packages: 15,
-    yachts: 22,
-    status: "live",
-  },
-  {
-    id: "REG-003",
-    city: "Barcelona",
-    country: "Spain",
-    lat: 41.3851,
-    lng: 2.1734,
-    packages: 18,
-    yachts: 24,
-    status: "live",
-  },
-  {
-    id: "REG-004",
-    city: "Miami",
-    country: "USA",
-    lat: 25.7617,
-    lng: -80.1918,
-    packages: 14,
-    yachts: 20,
-    status: "live",
-  },
-  {
-    id: "REG-005",
-    city: "Monaco",
-    country: "Monaco",
-    lat: 43.7384,
-    lng: 7.4246,
-    packages: 8,
-    yachts: 12,
-    status: "draft",
-  },
-  {
-    id: "REG-006",
-    city: "Maldives",
-    country: "Maldives",
-    lat: 3.2028,
-    lng: 73.2207,
-    packages: 10,
-    yachts: 15,
-    status: "live",
-  },
-];
+function mapAuditLogToActivity(log: AuditLogItem): Activity {
+  const entity = (log.entity ?? "").toLowerCase();
+  let type: Activity["type"] = "settings";
+  if (entity.includes("package")) type = "package";
+  else if (entity.includes("yacht")) type = "yacht";
+  else if (entity.includes("region") || entity.includes("site")) type = "site";
 
-const activitiesData: Activity[] = [
-  {
-    id: "A-001",
-    type: "package",
-    description:
-      "Sunset Experience package updated with new pricing",
-    region: "Barcelona",
-    admin: "Sarah Mitchell",
-    timestamp: "2 hours ago",
-  },
-  {
-    id: "A-002",
-    type: "yacht",
-    description: "Azure Dream yacht assigned to region",
-    region: "Dubai",
-    admin: "James Rodriguez",
-    timestamp: "4 hours ago",
-  },
-  {
-    id: "A-003",
-    type: "site",
-    description: "Site status changed to Draft",
-    region: "Monaco",
-    admin: "Emma Thompson",
-    timestamp: "5 hours ago",
-  },
-  {
-    id: "A-004",
-    type: "settings",
-    description: "Currency changed from USD to EUR",
-    region: "Athens",
-    admin: "Michael Chen",
-    timestamp: "6 hours ago",
-  },
-  {
-    id: "A-005",
-    type: "package",
-    description: "Full Day Charter package visibility changed",
-    region: "Miami",
-    admin: "Sarah Mitchell",
-    timestamp: "8 hours ago",
-  },
-  {
-    id: "A-006",
-    type: "yacht",
-    description: "Sea Harmony removed from fleet",
-    region: "Maldives",
-    admin: "David Park",
-    timestamp: "10 hours ago",
-  },
-  {
-    id: "A-007",
-    type: "package",
-    description: "Island Hopping package created",
-    region: "Barcelona",
-    admin: "Lisa Anderson",
-    timestamp: "12 hours ago",
-  },
-  {
-    id: "A-008",
-    type: "settings",
-    description: "Hero banner image updated",
-    region: "Dubai",
-    admin: "Robert Kim",
-    timestamp: "1 day ago",
-  },
-];
+  const adminName =
+    log.admin?.name ?? log.user?.name ?? log.admin?.email ?? log.user?.email ?? "—";
+  const regionName = log.region?.name ?? "—";
+
+  const relativeTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins} minute${mins !== 1 ? "s" : ""} ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days !== 1 ? "s" : ""} ago`;
+  };
+
+  return {
+    id: log.id,
+    type,
+    description: log.description ?? `${log.action} ${log.entity}`,
+    region: regionName,
+    admin: adminName,
+    timestamp: relativeTime(log.createdAt),
+  };
+}
 
 export default function RegionManagement() {
   const { colors } = useTheme();
@@ -155,7 +54,7 @@ export default function RegionManagement() {
   const [isDeleting, setIsDeleting] = useState(false);
   const queryClient = useQueryClient();
   const { data: regionsListData } = useRegionsListQuery();
-  const { data: performanceData } = useRegionPerformanceQuery();
+  const { data: auditLogsData } = useAuditLogsQuery();
 
   const regions = (regionsListData?.regions ?? []).map((region) => ({
     id: region.id,
@@ -164,29 +63,22 @@ export default function RegionManagement() {
     flag: "🌍",
     siteUrl: region.siteUrl || `/${region.slug ?? ""}`,
     status: (region.status as Region["status"]) ?? "draft",
-    packages: 0,
-    yachts: 0,
+    packages:
+      region._count?.packageRegionVisibility ??
+      region.packagesCount ??
+      region.packageCount ??
+      region.totalPackages ??
+      0,
+    yachts:
+      region._count?.yachts ??
+      region.yachtsCount ??
+      region.yachtCount ??
+      region.totalYachts ??
+      0,
     lastUpdated: region.updatedAt ? new Date(region.updatedAt).toLocaleDateString() : "—",
   }));
 
-  const locationLookup = new Map(
-    locationsData.map((location) => [location.city.toLowerCase(), location])
-  );
-  const mapLocations = regions
-    .map((region) => {
-      const match = locationLookup.get(region.city.toLowerCase());
-      if (!match) return null;
-      return {
-        ...match,
-        id: region.id,
-        city: region.city,
-        country: region.country,
-        status: region.status,
-      };
-    })
-    .filter((item): item is RegionLocation => item !== null);
-
-  const handleRegionSelect = (regionId: string) => {
+const handleRegionSelect = (regionId: string) => {
     setSelectedRegion(regionId);
     setShowDetailPanel(true);
   };
@@ -223,26 +115,7 @@ export default function RegionManagement() {
   const totalPackages = regions.reduce((sum, r) => sum + r.packages, 0);
   const totalFleet = regions.reduce((sum, r) => sum + r.yachts, 0);
 
-  const performanceColors = [
-    colors.accent,
-    colors.accentGold,
-    "#8B5CF6",
-    "#3B82F6",
-    "#10B981",
-    "#F97316",
-    "#14B8A6",
-  ];
-
-  const performanceRegions = (performanceData?.regions ?? []).map(
-    (region, index) => ({
-      name: region.name,
-      revenue: region.revenue,
-      bookings: region.bookings,
-      color: performanceColors[index % performanceColors.length],
-    })
-  );
-
-  return (
+return (
     <div className="p-4 md:p-6 lg:p-8">
       {/* Row 1 - KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6 md:mb-8">
@@ -276,17 +149,9 @@ export default function RegionManagement() {
         />
       </div>
 
-      {/* Row 2 - Map + Regions List */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 mb-6 md:mb-8">
-        <div className="lg:col-span-3">
-          <WorldMap
-            locations={mapLocations}
-            selectedRegion={selectedRegion}
-            onRegionSelect={handleRegionSelect}
-          />
-        </div>
-        <div className="lg:col-span-2">
-          <RegionsList
+      {/* Row 2 - Regions List */}
+      <div className="mb-6 md:mb-8">
+        <RegionsList
             regions={regions}
             selectedRegion={selectedRegion}
             onSelectRegion={handleRegionSelect}
@@ -295,17 +160,16 @@ export default function RegionManagement() {
             }}
             onView={handleView}
             onDelete={handleDelete}
-          />
-        </div>
+        />
       </div>
 
       {/* Row 3 - Region Detail Panel */}
       {showDetailPanel && selectedRegionData && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-y-auto"
           style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
         >
-          <div className="w-full max-w-5xl">
+          <div className="w-full max-w-5xl max-h-[min(92vh,calc(100dvh-2rem))] h-fit min-h-0 flex flex-col overflow-hidden my-auto">
             <RegionDetailPanel
               region={selectedRegionData}
               onClose={() => {
@@ -355,11 +219,8 @@ export default function RegionManagement() {
         </div>
       )}
 
-      {/* Row 4 - Performance + Activity Log */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-        <RegionPerformance regions={performanceRegions} />
-        <ActivityLog activities={activitiesData} />
-      </div>
+      {/* Row 4 - Activity Log */}
+      <ActivityLog activities={(auditLogsData?.logs ?? []).map(mapAuditLogToActivity)} />
     </div>
   );
 }

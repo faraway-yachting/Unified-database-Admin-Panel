@@ -7,8 +7,18 @@ import { FaSailboat } from "react-icons/fa6";
 import { IoEyeOutline } from "react-icons/io5";
 import Image from "next/image";
 import { useTheme } from "@/context/ThemeContext";
-import { useYachtByIdQuery, useDeleteYachtMutation, type YachtListItem, type YachtTranslation, type YachtGalleryImage, type YachtTag } from "@/lib/api/yachts";
+import {
+  useYachtByIdQuery,
+  useDeleteYachtMutation,
+  usePublishYachtMutation,
+  type YachtListItem,
+  type YachtTranslation,
+  type YachtGalleryImage,
+  type YachtTag,
+} from "@/lib/api/yachts";
 import YachtsUpdate from "./Update";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface YachtsDetailProps {
     id: string | number;
@@ -48,6 +58,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
     const [editing, setEditing] = useState(defaultEdit);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const deleteMutation = useDeleteYachtMutation();
+    const publishMutation = usePublishYachtMutation();
 
     const toggleEdit = (on: boolean) => {
         setEditing(on);
@@ -135,7 +146,6 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
         { label: "Built", value: builtVal },
         { label: "Badge", value: y?.badge ?? undefined },
         { label: "Code", value: y?.code ?? undefined },
-        { label: "Status", value: y?.status },
     ];
 
     const galleryImages: YachtGalleryImage[] = (y?.images ?? []).filter(i => i.imageUrl?.startsWith('http'));
@@ -162,20 +172,47 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                 className="rounded-2xl px-4 py-4 mb-4"
                 style={{ backgroundColor: colors.cardBg, border: `1px solid ${colors.cardBorder}` }}
             >
-                <div className="flex justify-between items-center gap-3 mb-3">
+                <div className="flex justify-between items-start sm:items-center gap-3 mb-3 flex-wrap">
                     <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
                         <FaSailboat className="shrink-0" style={{ color: colors.accent }} />
                         <span className="font-bold text-[16px] sm:text-[20px] lg:text-[24px] truncate min-w-0" style={{ color: colors.textPrimary }}>
                             Yachts Name - {title}
                         </span>
                     </div>
-                    <button
-                        onClick={() => router.push("/yachts/addnewyachts")}
-                        className="px-3 sm:px-[16px] py-[7px] rounded-full font-medium cursor-pointer transition-opacity hover:opacity-80 text-sm sm:text-base whitespace-nowrap shrink-0"
-                        style={{ backgroundColor: colors.accent, color: "#000" }}
-                    >
-                        + Add New Yachts
-                    </button>
+                    {y && (
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 justify-end shrink-0">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-semibold whitespace-nowrap" style={{ color: colors.textSecondary }}>Status</span>
+                                <select
+                                    value={(y.status || "available").toLowerCase()}
+                                    onChange={async (e) => {
+                                        const next = e.target.value;
+                                        try {
+                                            await publishMutation.mutateAsync({
+                                                yachtId: y.id,
+                                                status: next,
+                                            });
+                                            toast.success("Status updated");
+                                        } catch (err) {
+                                            toast.error((err as Error)?.message ?? "Failed to update status");
+                                        }
+                                    }}
+                                    disabled={publishMutation.isPending}
+                                    className="rounded-lg px-2 py-1.5 text-sm border min-w-[132px] cursor-pointer outline-none"
+                                    style={{
+                                        backgroundColor: colors.hoverBg,
+                                        borderColor: colors.cardBorder,
+                                        color: colors.textPrimary,
+                                    }}
+                                >
+                                    <option value="available">Available</option>
+                                    <option value="booked">Booked</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="retired">Retired</option>
+                                </select>
+                            </div>
+                        </div>
+                    )}
                 </div>
                 <div className="flex gap-1 flex-wrap">
                     {SUPPORTED_LOCALES.map(({ code, label }) => (
@@ -379,6 +416,7 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                     )}
                 </div>
             </div>
+            <ToastContainer position="top-right" autoClose={3000} />
         </div>
     );
 };

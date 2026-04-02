@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { NewYachtsData, RichTextEditorSections } from "@/data/Yachts";
 import Image from "next/image";
 import {
@@ -9,7 +9,6 @@ import {
   type AddYachtsPayload,
 } from "@/lib/api/yachts";
 import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { useFormik } from "formik";
 import {
   yachtsUpdateValidationSchema,
@@ -21,6 +20,8 @@ import RichTextEditor from "@/common/TextEditor";
 import Tick from "@/icons/Tick";
 import { RiArrowDownSLine } from "react-icons/ri";
 import { useTheme } from "@/context/ThemeContext";
+import { useRegionsQuery } from "@/lib/api/regions";
+import { useYachtVisibilityQuery, useSetYachtVisibilityMutation } from "@/lib/api/yachts";
 
 const SUPPORTED_LOCALES: { code: string; label: string }[] = [
   { code: "en", label: "EN" },
@@ -58,8 +59,41 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id, initialLocale 
 
   const { data: yachtData, isLoading: loading } = useYachtByIdQuery(id as string);
   const yachts = yachtData?.yachts ?? null;
+  const { data: regions } = useRegionsQuery();
+  const regionOptions = useMemo(() => regions ?? [], [regions]);
   const allTags = [{ _id: "super-yacht", Name: "super yacht" }, { _id: "overnight", Name: "overnight" }];
   const updateYachtMutation = useUpdateYachtMutation();
+
+  const { data: visibilityEntries = [] } = useYachtVisibilityQuery(id as string);
+  const setVisibilityMutation = useSetYachtVisibilityMutation(id as string);
+  const [visibleRegionIds, setVisibleRegionIds] = useState<Set<string>>(new Set());
+  const [visibilitySaving, setVisibilitySaving] = useState(false);
+
+  useEffect(() => {
+    setVisibleRegionIds(new Set(visibilityEntries.filter(e => e.isVisible).map(e => e.regionId)));
+  }, [visibilityEntries]);
+
+  const handleVisibilityToggle = (regionId: string) => {
+    setVisibleRegionIds(prev => {
+      const next = new Set(prev);
+      if (next.has(regionId)) next.delete(regionId);
+      else next.add(regionId);
+      return next;
+    });
+  };
+
+  const handleSaveVisibility = async () => {
+    setVisibilitySaving(true);
+    try {
+      const entries = regionOptions.map(r => ({ regionId: r.id, isVisible: visibleRegionIds.has(r.id) }));
+      await setVisibilityMutation.mutateAsync(entries);
+      toast.success("Website visibility saved");
+    } catch {
+      toast.error("Failed to save visibility");
+    } finally {
+      setVisibilitySaving(false);
+    }
+  };
 
   // Close tags dropdown when clicking outside
   useEffect(() => {
@@ -78,7 +112,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id, initialLocale 
 
   const scrollToFirstError = (errors: Record<string, unknown>) => {
     const fieldOrder = [
-      "Display Order", "Boat Type", "Title", "Category", "Capacity", "Length",
+      "Region", "Display Order", "Boat Type", "Title", "Category", "Capacity", "Length",
       "Length Range", "Cabins", "Bathrooms", "Passenger Day Trip", "Passenger Overnight",
       "Guests", "Guests Range", "Day Trip Price", "Overnight Price", "Daytrip Price (Euro)",
       "Yacht Type", "Primary Image", "Gallery Images", "Tags", "Video Link", "Badge",
@@ -229,6 +263,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id, initialLocale 
   const formik = useFormik<FormYachtsUpdateValues>({
     enableReinitialize: true,
     initialValues: {
+      Region: yachts?.regionId ?? "",
       "Display Order": yachts?.displayOrder ?? null,
       "Boat Type": yachts?.boatType ?? "",
       Title: tr?.title ?? yachts?.name ?? "",
@@ -271,8 +306,16 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id, initialLocale 
     onSubmit: async (values, { setSubmitting }) => {
       try {
         const errors = await formik.validateForm();
+        if (!String(values.Region || "").trim()) {
+          formik.setFieldError("Region", "Region is required");
+          formik.setFieldTouched("Region", true, false);
+          setSubmitting(false);
+          setTimeout(() => document.getElementById("field-Region")?.scrollIntoView({ behavior: "smooth", block: "center" }), 50);
+          return;
+        }
         if (Object.keys(errors).length > 0) {
           formik.setTouched({
+            Region: true,
             "Display Order": true,
             "Boat Type": true,
             Category: true,
@@ -357,6 +400,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id, initialLocale 
               tags: (values["Tags"] ?? []).filter((t: string | undefined): t is string => typeof t === "string"),
               displayOrder: values["Display Order"] ?? null,
               locale: editLocale,
+              regionId: values["Region"] ?? "",
             }
           : {
               // Translation-only fields — omit shared fields so backend cannot overwrite other locales
@@ -368,6 +412,7 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id, initialLocale 
               specifications: values["Specifications"] ?? "",
               boatLayout: values["Boat Layout"] ?? "",
               locale: editLocale,
+              regionId: values["Region"] ?? "",
             } as AddYachtsPayload;
 
         await updateYachtMutation.mutateAsync({
@@ -447,6 +492,49 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id, initialLocale 
                 </h2>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {sectionIndex === 0 && (
+                  <div id="field-Region">
+                    <div className="flex items-center gap-1 mb-2">
+                      <label className="block font-bold" style={{ color: colors.textPrimary }}>Region</label>
+                      <span style={{ color: colors.danger }}>*</span>
+                    </div>
+                    <div
+                      className="rounded-lg px-3 py-2 w-full"
+                      style={{
+                        backgroundColor: colors.hoverBg,
+                        border: getFieldError("Region") ? `1px solid ${colors.danger}` : "none",
+                      }}
+                    >
+                      <select
+                        name="Region"
+                        value={formik.values.Region}
+                        onChange={(e) => {
+                          formik.setFieldValue("Region", e.target.value);
+                          formik.setFieldTouched("Region", true, false);
+                        }}
+                        onBlur={formik.handleBlur}
+                        className="w-full outline-0 cursor-pointer bg-transparent"
+                        style={{
+                          color: formik.values.Region ? colors.textPrimary : colors.textSecondary,
+                        }}
+                      >
+                        <option value="" disabled hidden>
+                          Select region
+                        </option>
+                        {regionOptions.map((r) => (
+                          <option key={r.id} value={r.id} style={{ backgroundColor: colors.cardBg, color: colors.textPrimary }}>
+                            {r.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {getFieldError("Region") && (
+                      <p className="text-sm mt-1" style={{ color: colors.danger }}>
+                        {typeof formik.errors.Region === "string" && formik.errors.Region}
+                      </p>
+                    )}
+                  </div>
+                )}
                 {section.fields.map((field, index) => {
                   const value =
                     formik.values[field.label as keyof typeof formik.values] ??
@@ -952,6 +1040,49 @@ const YachtsUpdate: React.FC<CustomerProps> = ({ goToPrevTab, id, initialLocale 
             </div>
           );
         })}
+        {/* Website Visibility */}
+        <div className="mt-6 p-4 rounded-xl border" style={{ borderColor: colors.cardBorder, backgroundColor: colors.cardBg }}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="font-bold text-sm" style={{ color: colors.textPrimary }}>
+              Show on Websites
+            </p>
+            <button
+              type="button"
+              onClick={handleSaveVisibility}
+              disabled={visibilitySaving}
+              className="text-xs px-3 py-1.5 rounded-full text-white font-medium transition-opacity hover:opacity-90 disabled:opacity-60"
+              style={{ backgroundColor: colors.accent }}
+            >
+              {visibilitySaving ? "Saving..." : "Save Visibility"}
+            </button>
+          </div>
+          {regionOptions.length === 0 ? (
+            <p className="text-xs" style={{ color: colors.textSecondary }}>No websites found.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {regionOptions.map(region => (
+                <label key={region.id} className="flex items-center gap-3 cursor-pointer select-none">
+                  <div
+                    onClick={() => handleVisibilityToggle(region.id)}
+                    className="w-5 h-5 rounded flex items-center justify-center border cursor-pointer transition-colors"
+                    style={{
+                      backgroundColor: visibleRegionIds.has(region.id) ? colors.accent : "transparent",
+                      borderColor: visibleRegionIds.has(region.id) ? colors.accent : colors.cardBorder,
+                    }}
+                  >
+                    {visibleRegionIds.has(region.id) && (
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-sm" style={{ color: colors.textPrimary }}>{region.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="mt-3 flex justify-between">
           <button
             onClick={goToPrevTab}

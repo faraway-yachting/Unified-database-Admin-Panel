@@ -70,6 +70,8 @@ export const config = {
       availabilityBlock: (id: string) => url(`/api/yachts/${id}/availability/block`),
       availability: (id: string) => url(`/api/yachts/${id}/availability`),
       removeBlock: (id: string, blockId: string) => url(`/api/yachts/${id}/availability/${blockId}`),
+      websiteVisibility: (id: string) => url(`/api/yachts/${id}/website-visibility`),
+      removeWebsiteVisibility: (id: string, regionId: string) => url(`/api/yachts/${id}/website-visibility/${regionId}`),
     },
     blog: {
       list: url('/api/blog'),

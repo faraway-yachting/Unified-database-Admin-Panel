@@ -76,6 +76,7 @@ export const yachtsvalidationSchema = Yup.object().shape({
 
 export const yachtsUpdateValidationSchema = Yup.object().shape({
   "Display Order": Yup.number().nullable().transform((v, o) => (o === '' || o === null || o === undefined) ? null : v),
+  Region: Yup.string(),
   "Title": Yup.string(),
   "Boat Type": Yup.string(),
   "Category": Yup.string(),

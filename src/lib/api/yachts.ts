@@ -261,6 +261,7 @@ export interface AddYachtsPayload {
   primaryImage: File;
   galleryImages: (File | string)[];
   locale?: string;
+  regionId?: string;
 }
 
 export interface CreateYachtPayload {
@@ -665,6 +666,59 @@ export async function deleteYachtAvailabilityBlock(yachtId: string, blockId: str
   return data;
 }
 
+// --- Website Visibility ---
+
+export interface WebsiteVisibilityEntry {
+  id: string;
+  yachtId: string;
+  regionId: string;
+  isVisible: boolean;
+  sortOrder: number;
+  region: {
+    id: string;
+    name: string;
+    slug: string;
+    siteUrl: string | null;
+    status: string;
+  };
+}
+
+export async function getYachtWebsiteVisibility(yachtId: string): Promise<WebsiteVisibilityEntry[]> {
+  const { data } = await apiClient.get(config.api.yachts.websiteVisibility(yachtId));
+  if (data?.error) throw new Error(data?.error?.message || "Something went wrong");
+  return data?.data ?? [];
+}
+
+export async function setYachtWebsiteVisibility(
+  yachtId: string,
+  entries: { regionId: string; isVisible?: boolean; sortOrder?: number }[]
+): Promise<WebsiteVisibilityEntry[]> {
+  const { data } = await apiClient.put(config.api.yachts.websiteVisibility(yachtId), { entries });
+  if (data?.error) throw new Error(data?.error?.message || "Something went wrong");
+  return data?.data ?? [];
+}
+
+export function useYachtWebsiteVisibilityQuery(yachtId: string | null) {
+  return useQuery({
+    queryKey: [...yachtsKeys.detail(yachtId ?? ""), "website-visibility"],
+    queryFn: () => getYachtWebsiteVisibility(yachtId!),
+    enabled: !!yachtId,
+  });
+}
+
+export function useSetYachtWebsiteVisibilityMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ yachtId, entries }: { yachtId: string; entries: { regionId: string; isVisible?: boolean }[] }) =>
+      setYachtWebsiteVisibility(yachtId, entries),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: [...yachtsKeys.detail(variables.yachtId), "website-visibility"],
+      });
+    },
+  });
+}
+
 /** Map backend type to display label (bareboat | crewed). */
 export function yachtTypeToDisplay(type: string): string {
   const t = type?.toLowerCase() ?? "";
@@ -681,6 +735,49 @@ export function yachtStatusToDisplay(status: string): string {
   if (s === "maintenance") return "Maintenance";
   if (s === "retired") return "Retired";
   return status || "—";
+}
+
+// --- Website Visibility ---
+
+export interface YachtVisibilityEntry {
+  id: string;
+  yachtId: string;
+  regionId: string;
+  isVisible: boolean;
+  sortOrder: number;
+  region: {
+    id: string;
+    name: string;
+    slug: string;
+    siteUrl: string | null;
+    status: string;
+  };
+}
+
+export function useYachtVisibilityQuery(yachtId: string | null) {
+  return useQuery({
+    queryKey: ["yachts", yachtId, "visibility"],
+    queryFn: async () => {
+      const { data } = await apiClient.get(config.api.yachts.websiteVisibility(yachtId!));
+      const raw = data?.data ?? data;
+      return (Array.isArray(raw) ? raw : []) as YachtVisibilityEntry[];
+    },
+    enabled: !!yachtId,
+  });
+}
+
+export function useSetYachtVisibilityMutation(yachtId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (entries: { regionId: string; isVisible: boolean }[]) => {
+      const { data } = await apiClient.put(config.api.yachts.websiteVisibility(yachtId), { entries });
+      if (data?.error) throw new Error(data.error.message || "Something went wrong");
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["yachts", yachtId, "visibility"] });
+    },
+  });
 }
 
 /** Parse length from backend (may be number or Decimal string). */

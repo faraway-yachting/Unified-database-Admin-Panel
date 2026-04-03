@@ -258,6 +258,21 @@ const YachtsDetail: React.FC<YachtsDetailProps> = ({ id, defaultEdit = false }) 
                         ))}
                     </div>
 
+                    {/* Region */}
+                    <div className="pb-5 mb-5 border-b" style={divider}>
+                        <div className="text-xs font-bold mb-1" style={{ color: colors.textSecondary }}>Region</div>
+                        {y?.region ? (
+                            <span
+                                className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold"
+                                style={{ backgroundColor: `${colors.accent}15`, color: colors.accent, border: `1px solid ${colors.accent}30` }}
+                            >
+                                {y.region.name}
+                            </span>
+                        ) : (
+                            <div className="text-sm font-medium" style={{ color: colors.textSecondary }}>Not assigned to any region</div>
+                        )}
+                    </div>
+
                     {tags.length > 0 && (
                         <div className="pb-5 mb-5 border-b" style={divider}>
                             <div className="text-xs font-bold mb-2" style={{ color: colors.textSecondary }}>Tags</div>

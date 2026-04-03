@@ -25,6 +25,7 @@ import {
   useRemovePackageMutation,
   useUpdateRegionMutation,
 } from "@/lib/api/regions";
+import { useRegionBlogsQuery } from "@/lib/api/blog";
 
 interface RegionDetailPanelProps {
   region: Region;
@@ -33,9 +34,10 @@ interface RegionDetailPanelProps {
 
 export function RegionDetailPanel({ region, onClose }: RegionDetailPanelProps) {
   const { colors } = useTheme();
-  const [activeTab, setActiveTab] = useState<"packages" | "fleet" | "settings">("packages");
+  const [activeTab, setActiveTab] = useState<"fleet" | "blog" | "packages" | "settings">("fleet");
 
   const { data: yachts = [], isLoading: yachtsLoading } = useRegionYachtsQuery(region.id);
+  const { data: blogs = [], isLoading: blogsLoading } = useRegionBlogsQuery(region.id);
   const { data: packages = [], isLoading: packagesLoading } = useRegionPackagesQuery(region.id);
 
   const removeYacht = useRemoveYachtMutation(region.id);
@@ -95,8 +97,9 @@ export function RegionDetailPanel({ region, onClose }: RegionDetailPanelProps) {
   };
 
   const tabs = [
-    { id: "packages" as const, label: "Packages" },
     { id: "fleet" as const, label: "Fleet" },
+    { id: "blog" as const, label: "Blog" },
+    { id: "packages" as const, label: "Packages" },
     { id: "settings" as const, label: "Site Settings" },
   ];
 
@@ -204,6 +207,140 @@ export function RegionDetailPanel({ region, onClose }: RegionDetailPanelProps) {
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 md:p-6">
+        {activeTab === "blog" && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-lg font-bold" style={{ color: colors.textPrimary }}>
+                Assigned Blogs
+              </h4>
+              <Link
+                href="/blog/add"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:scale-105"
+                style={{ background: `linear-gradient(to right, ${colors.accent}, #00B39F)` }}
+              >
+                <Plus className="w-4 h-4" />
+                Add Blog
+              </Link>
+            </div>
+
+            {blogsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-6 h-6 animate-spin" style={{ color: colors.accent }} />
+              </div>
+            ) : blogs.length === 0 ? (
+              <div className="text-center py-12" style={{ color: colors.textSecondary }}>
+                No blogs assigned to this region yet.
+              </div>
+            ) : (
+              <>
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full min-w-[500px]">
+                    <thead>
+                      <tr className="border-b text-left" style={{ borderColor: colors.cardBorder }}>
+                        <th className="pb-3 text-xs font-semibold" style={{ color: colors.textSecondary, width: "60px" }}>
+                          Image
+                        </th>
+                        <th className="pb-3 text-xs font-semibold" style={{ color: colors.textSecondary }}>
+                          Title
+                        </th>
+                        <th className="pb-3 text-xs font-semibold" style={{ color: colors.textSecondary }}>
+                          Slug
+                        </th>
+                        <th className="pb-3 text-xs font-semibold" style={{ color: colors.textSecondary }}>
+                          Status
+                        </th>
+                        <th className="pb-3 text-xs font-semibold" style={{ color: colors.textSecondary }} />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {blogs.map((blog) => (
+                        <tr key={blog.id} className="border-b" style={{ borderColor: colors.cardBorder }}>
+                          <td className="py-3">
+                            {blog.primaryImage ? (
+                              <div className="relative w-12 h-9 rounded overflow-hidden">
+                                <Image src={blog.primaryImage} alt={blog.title ?? ""} fill className="object-cover" sizes="48px" />
+                              </div>
+                            ) : (
+                              <div className="w-12 h-9 rounded flex items-center justify-center text-xs" style={{ backgroundColor: colors.hoverBg, color: colors.textSecondary }}>
+                                —
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3 text-sm font-medium" style={{ color: colors.textPrimary }}>
+                            {blog.title ?? "—"}
+                          </td>
+                          <td className="py-3 text-sm font-mono" style={{ color: colors.textSecondary }}>
+                            {blog.slug}
+                          </td>
+                          <td className="py-3">
+                            <span
+                              className="px-2 py-1 rounded text-xs font-medium"
+                              style={{
+                                backgroundColor: blog.status === "published" ? `${colors.accent}20` : `${colors.textSecondary}20`,
+                                color: blog.status === "published" ? colors.accent : colors.textSecondary,
+                              }}
+                            >
+                              {blog.status === "published" ? "Published" : "Draft"}
+                            </span>
+                          </td>
+                          <td className="py-3">
+                            <Link
+                              href={`/blog/${blog.id}`}
+                              className="p-2 rounded hover:opacity-70 transition-opacity inline-flex"
+                              style={{ color: colors.textSecondary }}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mobile cards */}
+                <div className="md:hidden space-y-3">
+                  {blogs.map((blog) => (
+                    <div
+                      key={blog.id}
+                      className="p-4 rounded-lg border flex items-center gap-3"
+                      style={{ backgroundColor: colors.background, borderColor: colors.cardBorder }}
+                    >
+                      {blog.primaryImage ? (
+                        <div className="relative w-14 h-12 rounded overflow-hidden shrink-0">
+                          <Image src={blog.primaryImage} alt={blog.title ?? ""} fill className="object-cover" sizes="56px" />
+                        </div>
+                      ) : (
+                        <div className="w-14 h-12 rounded shrink-0 flex items-center justify-center text-xs" style={{ backgroundColor: colors.hoverBg, color: colors.textSecondary }}>
+                          —
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-sm truncate" style={{ color: colors.textPrimary }}>
+                          {blog.title ?? "—"}
+                        </div>
+                        <div className="text-xs font-mono truncate" style={{ color: colors.textSecondary }}>
+                          {blog.slug}
+                        </div>
+                      </div>
+                      <span
+                        className="px-2 py-1 rounded text-xs font-medium shrink-0"
+                        style={{
+                          backgroundColor: blog.status === "published" ? `${colors.accent}20` : `${colors.textSecondary}20`,
+                          color: blog.status === "published" ? colors.accent : colors.textSecondary,
+                        }}
+                      >
+                        {blog.status === "published" ? "Published" : "Draft"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {activeTab === "packages" && (
           <div>
             <div className="flex items-center justify-between mb-4">

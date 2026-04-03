@@ -80,6 +80,7 @@ export const config = {
       update: (id: string) => url(`/api/blog/${id}`),
       delete: (id: string) => url(`/api/blog/${id}`),
       updateStatus: (id: string) => url(`/api/blog/${id}/status`),
+      uploadImage: (id: string) => url(`/api/blog/${id}/upload-image`),
     },
     tags: {
       list: url('/api/tags'),

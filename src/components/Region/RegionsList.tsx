@@ -12,6 +12,7 @@ export interface Region {
   status: "live" | "draft";
   packages: number;
   yachts: number;
+  blogs: number;
   lastUpdated: string;
 }
 
@@ -126,21 +127,7 @@ export function RegionsList({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div>
-                    <div
-                      className="text-xs mb-0.5"
-                      style={{ color: colors.textSecondary }}
-                    >
-                      Packages
-                    </div>
-                    <div
-                      className="text-lg font-bold font-mono"
-                      style={{ color: region.packages > 0 ? colors.textPrimary : colors.textSecondary }}
-                    >
-                      {region.packages > 0 ? region.packages : "—"}
-                    </div>
-                  </div>
+                <div className="grid grid-cols-3 gap-3 mb-3">
                   <div>
                     <div
                       className="text-xs mb-0.5"
@@ -153,6 +140,34 @@ export function RegionsList({
                       style={{ color: region.yachts > 0 ? colors.textPrimary : colors.textSecondary }}
                     >
                       {region.yachts > 0 ? region.yachts : "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      className="text-xs mb-0.5"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Blogs
+                    </div>
+                    <div
+                      className="text-lg font-bold font-mono"
+                      style={{ color: region.blogs > 0 ? colors.textPrimary : colors.textSecondary }}
+                    >
+                      {region.blogs > 0 ? region.blogs : "—"}
+                    </div>
+                  </div>
+                  <div>
+                    <div
+                      className="text-xs mb-0.5"
+                      style={{ color: colors.textSecondary }}
+                    >
+                      Packages
+                    </div>
+                    <div
+                      className="text-lg font-bold font-mono"
+                      style={{ color: region.packages > 0 ? colors.textPrimary : colors.textSecondary }}
+                    >
+                      {region.packages > 0 ? region.packages : "—"}
                     </div>
                   </div>
                 </div>

@@ -37,7 +37,9 @@ export interface RegionListItem {
   packagesCount?: number;
   packageCount?: number;
   totalPackages?: number;
-  _count?: { yachts?: number; packages?: number; packageRegionVisibility?: number };
+  blogsCount?: number;
+  blogCount?: number;
+  _count?: { yachts?: number; packages?: number; packageRegionVisibility?: number; blogVisibility?: number };
 }
 
 export interface RegionsListResponse {
@@ -61,6 +63,7 @@ export interface RegionPerformanceResponse {
 
 async function fetchRegionsApi(): Promise<RegionOption[]> {
   const { data } = await apiClient.get(config.api.regions.list);
+  if (data?.error) throw new Error(data?.error?.message || "Failed to load regions");
   const raw = data?.data ?? data;
   const list = Array.isArray(raw) ? raw : Array.isArray(raw?.regions) ? raw.regions : [];
   return list.map((r: { id?: string; _id?: string; name?: string }) => ({
@@ -237,11 +240,14 @@ export function useRemovePackageMutation(regionId: string) {
 export interface AuditLogItem {
   id: string;
   action: string;
-  entity: string;
+  entity?: string;
+  entityType?: string;
   entityId?: string;
   description?: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
+  adminUser?: { firstName?: string; lastName?: string; email?: string };
+  // legacy / alternate shapes
   admin?: { name?: string; email?: string };
   region?: { name?: string };
   user?: { name?: string; email?: string };
@@ -258,7 +264,9 @@ async function fetchAuditLogsApi(): Promise<AuditLogsResponse> {
   if (Array.isArray(raw)) {
     return { logs: raw, total: raw.length };
   }
-  return raw as AuditLogsResponse;
+  // Backend may return { auditLogs: [...] } or { logs: [...] }
+  const logs = raw?.logs ?? raw?.auditLogs ?? [];
+  return { logs, total: raw?.total ?? logs.length };
 }
 
 export function useAuditLogsQuery() {

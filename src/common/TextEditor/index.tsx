@@ -35,9 +35,10 @@ interface TableDimensions {
 type RichTextEditorOneProps = {
   value?: string
   onChange: (content: string) => void
+  onImageUpload?: (file: File) => Promise<string>
 }
 
-const RichTextEditor: React.FC<RichTextEditorOneProps> = ({ value = "", onChange }) => {
+const RichTextEditor: React.FC<RichTextEditorOneProps> = ({ value = "", onChange, onImageUpload }) => {
   const { colors } = useTheme();
   const editorRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -47,6 +48,7 @@ const RichTextEditor: React.FC<RichTextEditorOneProps> = ({ value = "", onChange
   const [selectedImage, setSelectedImage] = useState<HTMLImageElement | null>(null) // State for selected image
   const lastSelectionRange = useRef<Range | null>(null) // Ref to store the last selection
   const isUpdatingRef = useRef(false) // Ref to prevent infinite loops
+  const isExternalUpdateRef = useRef(false) // Ref to track value-prop-driven updates (skip onChange)
 
   // State for table context menu
   const [showTableContextMenu, setShowTableContextMenu] = useState(false)
@@ -56,6 +58,7 @@ const RichTextEditor: React.FC<RichTextEditorOneProps> = ({ value = "", onChange
   // Initialize editor content from value prop
   useEffect(() => {
      if (editorRef.current && editorRef.current.innerHTML !== value && !isUpdatingRef.current) {
+      isExternalUpdateRef.current = true
       editorRef.current.innerHTML = value
       setEditorContent(value)
     }
@@ -63,6 +66,11 @@ const RichTextEditor: React.FC<RichTextEditorOneProps> = ({ value = "", onChange
 
   // Report content changes via onChange prop
   useEffect(() => {
+    // Skip if this update came from the value prop (not user input)
+    if (isExternalUpdateRef.current) {
+      isExternalUpdateRef.current = false
+      return
+    }
     if (!isUpdatingRef.current) {
       isUpdatingRef.current = true
       onChange(editorContent)
@@ -609,71 +617,65 @@ const RichTextEditor: React.FC<RichTextEditorOneProps> = ({ value = "", onChange
     }
   }, [executeCommand])
 
+  const insertImageIntoEditor = useCallback((imageUrl: string) => {
+    if (!editorRef.current) return
+
+    editorRef.current.focus()
+    let selection = window.getSelection()
+    if (!selection || selection.rangeCount === 0) {
+      const newRange = document.createRange()
+      newRange.selectNodeContents(editorRef.current)
+      newRange.collapse(false)
+      selection = window.getSelection()
+      selection?.removeAllRanges()
+      selection?.addRange(newRange)
+    }
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0)
+
+      const img = document.createElement("img")
+      img.src = imageUrl
+      img.alt = "Uploaded Image"
+      img.style.maxWidth = "100%"
+      img.style.height = "auto"
+      img.style.display = "block"
+      img.style.margin = "8px 0"
+
+      range.deleteContents()
+      range.insertNode(img)
+
+      // Move cursor after the image
+      range.setStartAfter(img)
+      range.collapse(true)
+      selection.removeAllRanges()
+      selection.addRange(range)
+
+      setSelectedImage(img)
+      setEditorContent(editorRef.current.innerHTML)
+    }
+  }, [])
+
   const handleImageUpload = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0]
-      if (file) {
+      if (!file) return
+
+      if (onImageUpload) {
+        onImageUpload(file).then((imageUrl) => {
+          insertImageIntoEditor(imageUrl)
+        }).catch(() => {
+          // fallback to base64 if upload fails
+          const reader = new FileReader()
+          reader.onloadend = () => insertImageIntoEditor(reader.result as string)
+          reader.readAsDataURL(file)
+        })
+      } else {
         const reader = new FileReader()
-        reader.onloadend = () => {
-          const imageUrl = reader.result as string
-          if (!editorRef.current || !editorWrapperRef.current) return
-
-          let selection = window.getSelection()
-          if (!selection || selection.rangeCount === 0) {
-            editorRef.current.focus()
-            const newRange = document.createRange()
-            newRange.selectNodeContents(editorRef.current)
-            newRange.collapse(false) // place caret at end
-            selection = window.getSelection()
-            selection?.removeAllRanges()
-            selection?.addRange(newRange)
-          }
-          if (selection && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0)
-
-            const img = document.createElement("img")
-            img.src = imageUrl
-            img.alt = "Uploaded Image"
-            img.style.maxWidth = "100%" // Ensure it doesn't overflow initially
-            img.style.height = "auto"
-            img.style.display = "block" // Make it a block element for easier positioning
-            img.style.minWidth = "50px" // Ensure minimum size for visibility
-            img.style.minHeight = "50px" // Ensure minimum size for visibility
-
-            // Insert the image temporarily to get its natural position
-            range.deleteContents() // Remove any selected content
-            range.insertNode(img)
-
-            // Get the image's position relative to the editorWrapperRef
-            const imgRect = img.getBoundingClientRect()
-            const editorWrapperRect = editorWrapperRef.current.getBoundingClientRect()
-
-            // Calculate initial absolute position
-            const initialLeft = imgRect.left - editorWrapperRect.left + editorWrapperRef.current.scrollLeft
-            const initialTop = imgRect.top - editorWrapperRect.top + editorWrapperRef.current.scrollTop
-
-            // Now set its position to absolute
-            img.style.position = "absolute"
-            img.style.left = `${initialLeft}px`
-            img.style.top = `${initialTop}px`
-
-            // Set the selected image
-            setSelectedImage(img)
-
-            // Update content state
-            setEditorContent(editorRef.current.innerHTML)
-
-            // Move cursor after the image
-            range.setStartAfter(img)
-            range.collapse(true)
-            selection.removeAllRanges()
-            selection.addRange(range)
-          }
-        }
+        reader.onloadend = () => insertImageIntoEditor(reader.result as string)
         reader.readAsDataURL(file)
       }
     },
-    [], // No dependencies needed for this specific logic
+    [onImageUpload, insertImageIntoEditor],
   )
 
   const addTableRowBelow = useCallback((targetCell?: HTMLTableCellElement) => {

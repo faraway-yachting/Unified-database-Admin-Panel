@@ -1,11 +1,11 @@
 "use client";
 
-import { Package, Ship, Globe, Settings, User } from "lucide-react";
+import { Package, Ship, Globe, Settings, User, BookOpen } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
 
 export interface Activity {
   id: string;
-  type: "package" | "yacht" | "site" | "settings";
+  type: "package" | "yacht" | "site" | "settings" | "blog";
   description: string;
   region: string;
   admin: string;
@@ -21,6 +21,7 @@ const activityIcons = {
   yacht: Ship,
   site: Globe,
   settings: Settings,
+  blog: BookOpen,
 };
 
 const activityColors = {
@@ -28,6 +29,7 @@ const activityColors = {
   yacht: "#F4A924",
   site: "#8B5CF6",
   settings: "#6B7280",
+  blog: "#3B82F6",
 };
 
 export function ActivityLog({ activities }: ActivityLogProps) {

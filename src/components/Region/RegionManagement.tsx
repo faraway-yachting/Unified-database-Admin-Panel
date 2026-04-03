@@ -16,14 +16,16 @@ import {
 } from "@/lib/api/regions";
 
 function mapAuditLogToActivity(log: AuditLogItem): Activity {
-  const entity = (log.entity ?? "").toLowerCase();
+  const entity = (log.entityType ?? log.entity ?? "").toLowerCase();
   let type: Activity["type"] = "settings";
   if (entity.includes("package")) type = "package";
   else if (entity.includes("yacht")) type = "yacht";
+  else if (entity.includes("blog")) type = "blog";
   else if (entity.includes("region") || entity.includes("site")) type = "site";
 
-  const adminName =
-    log.admin?.name ?? log.user?.name ?? log.admin?.email ?? log.user?.email ?? "—";
+  const adminName = log.adminUser
+    ? [log.adminUser.firstName, log.adminUser.lastName].filter(Boolean).join(" ") || log.adminUser.email || "—"
+    : log.admin?.name ?? log.user?.name ?? log.admin?.email ?? log.user?.email ?? "—";
   const regionName = log.region?.name ?? "—";
 
   const relativeTime = (dateStr: string) => {
@@ -63,17 +65,22 @@ export default function RegionManagement() {
     flag: "🌍",
     siteUrl: region.siteUrl || `/${region.slug ?? ""}`,
     status: (region.status as Region["status"]) ?? "draft",
-    packages:
-      region._count?.packageRegionVisibility ??
-      region.packagesCount ??
-      region.packageCount ??
-      region.totalPackages ??
-      0,
     yachts:
       region._count?.yachts ??
       region.yachtsCount ??
       region.yachtCount ??
       region.totalYachts ??
+      0,
+    blogs:
+      region._count?.blogVisibility ??
+      region.blogsCount ??
+      region.blogCount ??
+      0,
+    packages:
+      region._count?.packageRegionVisibility ??
+      region.packagesCount ??
+      region.packageCount ??
+      region.totalPackages ??
       0,
     lastUpdated: region.updatedAt ? new Date(region.updatedAt).toLocaleDateString() : "—",
   }));

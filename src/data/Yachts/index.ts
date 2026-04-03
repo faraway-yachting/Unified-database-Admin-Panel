@@ -94,7 +94,7 @@ export const NewYachtsData: NewYachtsFormSection[] = [
         placeholder: "e.g,. http://www.youtube.com",
       },
       { label: "Badge", placeholder: "" },
-      { label: "Slug", placeholder: "" },
+      { label: "Slug", placeholder: "", required: true },
       { label: "Tags", placeholder: "", type:"dropdown" },
     ],
   },

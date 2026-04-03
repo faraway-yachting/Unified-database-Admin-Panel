@@ -489,6 +489,22 @@ async function updateYachtApi({
 }
 
 async function deleteYachtApi(id: string): Promise<{ success: boolean; id: string }> {
+  // Fetch all images (primary + gallery) and delete them from S3 via backend before deleting the yacht
+  try {
+    const { data: imagesData } = await apiClient.get(config.api.yachts.images(id));
+    const images: Array<{ id: string }> = Array.isArray(imagesData)
+      ? imagesData
+      : imagesData?.data ?? imagesData?.images ?? [];
+    await Promise.all(
+      images.map((img) =>
+        apiClient.delete(config.api.yachts.image(id, img.id)).catch(() => {
+          // continue even if a single image delete fails
+        })
+      )
+    );
+  } catch {
+    // If fetching images fails, proceed with yacht deletion anyway
+  }
   await apiClient.delete(config.api.yachts.delete(id));
   return { success: true, id };
 }
